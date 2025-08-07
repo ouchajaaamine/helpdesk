@@ -1,0 +1,53 @@
+server:
+    port: 8081
+
+spring:
+    application:
+        name: user-service
+    datasource:
+        url: jdbc:postgresql://localhost:5432/userdb
+        username: postgres
+        password: password
+        driver-class-name: org.postgresql.Driver
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+        properties:
+            hibernate:
+                format_sql: true
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+    mail:
+        host: smtp.gmail.com
+        port: 587
+        username: ouchajaaamine@gmail.com  # Replace with your actual Gmail
+        password: uoda cjbb srso klnv    # Replace with Gmail App Password
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    starttls:
+                        enable: true
+                    ssl:
+                        enable: false
+
+eureka:
+    client:
+        serviceUrl:
+            defaultZone: http://localhost:8761/eureka/
+        fetch-registry: true
+        register-with-eureka: true
+    instance:
+        hostname: localhost
+
+logging:
+    level:
+        org.springframework: INFO
+        com.helpdesk.userservice: DEBUG
+
+# Application-specific configuration
+app:
+    admin:
+        email: admin@yourcompany.com    # Admin email for notifications
+    frontend:
+        url: http://localhost:3000      # Your frontend URL
