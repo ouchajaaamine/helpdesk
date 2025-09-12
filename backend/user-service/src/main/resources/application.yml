@@ -13,10 +13,26 @@ spring:
         hibernate:
             ddl-auto: update
         show-sql: true
+        defer-datasource-initialization: true
         properties:
             hibernate:
-                format_sql: true
+                '[format_sql]': true
                 dialect: org.hibernate.dialect.PostgreSQLDialect
+    sql:
+        init:
+            mode: always
+            continue-on-error: true
+    
+    # 🔐 KEYCLOAK OAUTH2 CONFIGURATION
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    # Keycloak JWT token validation endpoint
+                    issuer-uri: http://localhost:8180/realms/helpdesk-system
+                    # JWK Set URI for validating JWT signatures
+                    jwk-set-uri: http://localhost:8180/realms/helpdesk-system/protocol/openid-connect/certs
+    
     mail:
         host: smtp.gmail.com
         port: 587
@@ -42,12 +58,37 @@ eureka:
 
 logging:
     level:
-        org.springframework: INFO
-        com.helpdesk.userservice: DEBUG
+        '[org.springframework]': INFO
+        '[com.helpdesk.userservice]': DEBUG
 
 # Application-specific configuration
 app:
     admin:
-        email: admin@yourcompany.com    # Admin email for notifications
+        email: admin@helpdesk.com
     frontend:
-        url: http://localhost:3000      # Your frontend URL
+        url: http://localhost:4200
+
+# 🔐 KEYCLOAK ADMIN CLIENT CONFIGURATION
+keycloak:
+    # Keycloak server URL
+    server-url: http://localhost:8180
+    # Realm name
+    realm: helpdesk-system
+    # Admin credentials for managing users
+    admin:
+        username: admin
+        password: admin123
+        client-id: admin-cli
+    # Client configuration for this service
+    client:
+        id: helpdesk-backend
+        secret: hvGlrzRCH3hut74FXeESaKS72vvJjBZj
+
+# Swagger/OpenAPI Configuration
+springdoc:
+    api-docs:
+        path: /api-docs
+    swagger-ui:
+        path: /swagger-ui.html
+        operationsSorter: method
+        tagsSorter: alpha

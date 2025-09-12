@@ -1,0 +1,404 @@
+{
+  "realm": "helpdesk-system",
+  "users": [
+    {
+      "id": "admin-keycloak-id",
+      "username": "michael.rodriguez",
+      "email": "admin@techcorp.com",
+      "firstName": "Michael",
+      "lastName": "Rodriguez",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"],
+      "attributes": {
+        "role": ["ADMIN"],
+        "department": ["IT Administration"]
+      }
+    },
+    {
+      "id": "sarah-johnson-keycloak-id",
+      "username": "sarah.johnson",
+      "email": "sarah.johnson@techcorp.com",
+      "firstName": "Sarah",
+      "lastName": "Johnson",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "tech123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["technician"],
+      "attributes": {
+        "role": ["TECHNICIAN"],
+        "department": ["IT Support"]
+      }
+    },
+    {
+      "id": "david-chen-keycloak-id",
+      "username": "david.chen",
+      "email": "david.chen@techcorp.com",
+      "firstName": "David",
+      "lastName": "Chen",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "tech123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["technician"],
+      "attributes": {
+        "role": ["TECHNICIAN"],
+        "department": ["IT Support"]
+      }
+    },
+    {
+      "id": "lisa-thompson-keycloak-id",
+      "username": "lisa.thompson",
+      "email": "lisa.thompson@techcorp.com",
+      "firstName": "Lisa",
+      "lastName": "Thompson",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "tech123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["technician"],
+      "attributes": {
+        "role": ["TECHNICIAN"],
+        "department": ["IT Support"]
+      }
+    },
+    {
+      "id": "james-wilson-keycloak-id",
+      "username": "james.wilson",
+      "email": "james.wilson@techcorp.com",
+      "firstName": "James",
+      "lastName": "Wilson",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "tech123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["technician"],
+      "attributes": {
+        "role": ["TECHNICIAN"],
+        "department": ["IT Support"]
+      }
+    },
+    {
+      "id": "emma-garcia-keycloak-id",
+      "username": "emma.garcia",
+      "email": "emma.garcia@techcorp.com",
+      "firstName": "Emma",
+      "lastName": "Garcia",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "tech123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["technician"],
+      "attributes": {
+        "role": ["TECHNICIAN"],
+        "department": ["IT Support"]
+      }
+    },
+    {
+      "id": "amanda-peterson-keycloak-id",
+      "username": "amanda.peterson",
+      "email": "amanda.peterson@techcorp.com",
+      "firstName": "Amanda",
+      "lastName": "Peterson",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Marketing"]
+      }
+    },
+    {
+      "id": "mark-anderson-keycloak-id",
+      "username": "mark.anderson",
+      "email": "mark.anderson@techcorp.com",
+      "firstName": "Mark",
+      "lastName": "Anderson",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Marketing"]
+      }
+    },
+    {
+      "id": "jennifer-lee-keycloak-id",
+      "username": "jennifer.lee",
+      "email": "jennifer.lee@techcorp.com",
+      "firstName": "Jennifer",
+      "lastName": "Lee",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Marketing"]
+      }
+    },
+    {
+      "id": "christopher-martinez-keycloak-id",
+      "username": "christopher.martinez",
+      "email": "christopher.martinez@techcorp.com",
+      "firstName": "Christopher",
+      "lastName": "Martinez",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Sales"]
+      }
+    },
+    {
+      "id": "rachel-brown-keycloak-id",
+      "username": "rachel.brown",
+      "email": "rachel.brown@techcorp.com",
+      "firstName": "Rachel",
+      "lastName": "Brown",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Sales"]
+      }
+    },
+    {
+      "id": "steven-davis-keycloak-id",
+      "username": "steven.davis",
+      "email": "steven.davis@techcorp.com",
+      "firstName": "Steven",
+      "lastName": "Davis",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Sales"]
+      }
+    },
+    {
+      "id": "michelle-taylor-keycloak-id",
+      "username": "michelle.taylor",
+      "email": "michelle.taylor@techcorp.com",
+      "firstName": "Michelle",
+      "lastName": "Taylor",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Finance"]
+      }
+    },
+    {
+      "id": "kevin-white-keycloak-id",
+      "username": "kevin.white",
+      "email": "kevin.white@techcorp.com",
+      "firstName": "Kevin",
+      "lastName": "White",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Finance"]
+      }
+    },
+    {
+      "id": "laura-jackson-keycloak-id",
+      "username": "laura.jackson",
+      "email": "laura.jackson@techcorp.com",
+      "firstName": "Laura",
+      "lastName": "Jackson",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Finance"]
+      }
+    },
+    {
+      "id": "daniel-miller-keycloak-id",
+      "username": "daniel.miller",
+      "email": "daniel.miller@techcorp.com",
+      "firstName": "Daniel",
+      "lastName": "Miller",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["HR"]
+      }
+    },
+    {
+      "id": "nicole-moore-keycloak-id",
+      "username": "nicole.moore",
+      "email": "nicole.moore@techcorp.com",
+      "firstName": "Nicole",
+      "lastName": "Moore",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["HR"]
+      }
+    },
+    {
+      "id": "richard-young-keycloak-id",
+      "username": "richard.young",
+      "email": "richard.young@techcorp.com",
+      "firstName": "Richard",
+      "lastName": "Young",
+      "enabled": false,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emp123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["employee"],
+      "attributes": {
+        "role": ["EMPLOYEE"],
+        "department": ["Operations"]
+      }
+    },
+    {
+      "id": "patricia-allen-keycloak-id",
+      "username": "patricia.allen",
+      "email": "patricia.allen@techcorp.com",
+      "firstName": "Patricia",
+      "lastName": "Allen",
+      "enabled": false,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "tech123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["technician"],
+      "attributes": {
+        "role": ["TECHNICIAN"],
+        "department": ["IT Support"]
+      }
+    }
+  ]
+}

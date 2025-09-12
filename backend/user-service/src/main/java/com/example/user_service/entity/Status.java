@@ -4,5 +4,6 @@ public enum Status {
     PENDING,
     ACTIVE,
     INACTIVE,
-    EXPIRED
+    EXPIRED,
+    REJECTED
 }
