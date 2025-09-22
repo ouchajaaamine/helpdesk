@@ -10,13 +10,57 @@ spring:
         locator:
           enabled: true
           lower-case-service-id: true
+      routes:
+        - id: user-service-api-docs
+          uri: http://localhost:8081
+          predicates:
+            - Path=/v3/api-docs/user-service
+          filters:
+            - RewritePath=/v3/api-docs/user-service, /api-docs
+        - id: ticket-service-api-docs
+          uri: http://localhost:8082
+          predicates:
+            - Path=/v3/api-docs/ticket-service
+          filters:
+            - RewritePath=/v3/api-docs/ticket-service, /api-docs
+        - id: user-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/users/**
+        - id: user-service-admin
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/admin/**
+        - id: ticket-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/tickets/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
+# SpringDoc OpenAPI configuration
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    urls:
+      - name: user-service
+        url: /v3/api-docs/user-service
+      - name: ticket-service
+        url: /v3/api-docs/ticket-service
+
 # Disable unnecessary features for simplicity
 logging:
   level:
-    org.springframework.cloud.gateway: INFO
+    '[org.springframework.cloud.gateway]': INFO

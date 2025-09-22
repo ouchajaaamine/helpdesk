@@ -68,10 +68,11 @@ public class KeycloakSecurityConfig {
                     .filter(role -> !role.startsWith("default-roles-") && 
                                    !role.equals("offline_access") && 
                                    !role.equals("uma_authorization"))
-                    // Add ROLE_ prefix for Spring Security
+                    // Add ROLE_ prefix for Spring Security and convert to uppercase
                     .map(role -> {
-                        System.out.println("DEBUG: Mapping role: " + role + " -> ROLE_" + role);
-                        return new SimpleGrantedAuthority("ROLE_" + role);
+                        String upperCaseRole = role.toUpperCase();
+                        System.out.println("DEBUG: Mapping role: " + role + " -> ROLE_" + upperCaseRole);
+                        return new SimpleGrantedAuthority("ROLE_" + upperCaseRole);
                     })
                     .collect(Collectors.toList());
             

@@ -29,7 +29,7 @@ public class OpenApiConfig {
                                 .name("Apache 2.0")
                                 .url("http://www.apache.org/licenses/LICENSE-2.0")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8082").description("Development server"),
+                        new Server().url("http://localhost:8080").description("Gateway server"),
                         new Server().url("https://api.helpdesk.com").description("Production server")
                 ))
                 .components(new io.swagger.v3.oas.models.Components()
