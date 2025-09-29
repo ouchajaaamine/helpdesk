@@ -1,0 +1,137 @@
+services:
+  # PostgreSQL Database for User Service
+  postgres-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    networks:
+      - helpdesk-network
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+
+  # PostgreSQL Database for Ticket Service  
+  postgres-ticket:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ticketdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    networks:
+      - helpdesk-network
+    volumes:
+      - ticket_db_data:/var/lib/postgresql/data
+
+  # Keycloak Authentication Service
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+      KC_HOSTNAME: localhost
+      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+    ports:
+      - "8180:8080"  # Map to 8180 to match your JWT tokens
+    networks:
+      - helpdesk-network
+    volumes:
+      - ./keycloak-import:/opt/keycloak/data/import
+      - keycloak-data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  # Eureka Discovery Service
+  discovery-service:
+    build:
+      context: ./backend/discovery-service
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - helpdesk-network
+
+  # API Gateway Service
+  gateway-service:
+    build:
+      context: ./backend/gateway-service  
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - helpdesk-network
+    depends_on:
+      discovery-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # User Management Service
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - helpdesk-network
+    depends_on:
+      postgres-db:
+        condition: service_started
+      discovery-service:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Ticket Management Service
+  ticket-service:
+    build:
+      context: ./backend/ticket-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    networks:
+      - helpdesk-network
+    depends_on:
+      postgres-ticket:
+        condition: service_started
+      discovery-service:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8082"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+networks:
+  helpdesk-network:
+    driver: bridge
+
+volumes:
+  user_db_data:
+  ticket_db_data:
+  keycloak-data:

@@ -67,6 +67,12 @@
             <version>2.2.0</version>
         </dependency>
 
+        <!-- Spring Boot Actuator for health checks -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- 🔐 KEYCLOAK INTEGRATION DEPENDENCIES -->
         <!-- Spring Security for OAuth2 Resource Server -->
         <dependency>

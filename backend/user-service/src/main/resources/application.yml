@@ -5,7 +5,7 @@ spring:
     application:
         name: user-service
     datasource:
-        url: jdbc:postgresql://localhost:5432/userdb
+        url: jdbc:postgresql://postgres-db:5432/userdb
         username: postgres
         password: password
         driver-class-name: org.postgresql.Driver
@@ -31,7 +31,7 @@ spring:
                     # Keycloak JWT token validation endpoint
                     issuer-uri: http://localhost:8180/realms/helpdesk-system
                     # JWK Set URI for validating JWT signatures
-                    jwk-set-uri: http://localhost:8180/realms/helpdesk-system/protocol/openid-connect/certs
+                    jwk-set-uri: http://host.docker.internal:8180/realms/helpdesk-system/protocol/openid-connect/certs
     
     mail:
         host: smtp.gmail.com
@@ -50,7 +50,7 @@ spring:
 eureka:
     client:
         serviceUrl:
-            defaultZone: http://localhost:8761/eureka/
+            defaultZone: http://discovery-service:8761/eureka/
         fetch-registry: true
         register-with-eureka: true
     instance:
@@ -71,7 +71,7 @@ app:
 # 🔐 KEYCLOAK ADMIN CLIENT CONFIGURATION
 keycloak:
     # Keycloak server URL
-    server-url: http://localhost:8180
+    server-url: http://host.docker.internal:8180
     # Realm name
     realm: helpdesk-system
     # Admin credentials for managing users
