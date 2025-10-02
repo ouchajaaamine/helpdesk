@@ -1,12 +1,24 @@
 FROM openjdk:21-jdk-slim
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
+
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
+
 RUN ./mvnw dependency:go-offline -B
+
 COPY src src
 RUN ./mvnw package -DskipTests
-COPY target target
+
 EXPOSE 8082
-HEALTHCHECK --interval=10s --timeout=5s --retries=10 CMD curl -f http://discovery-service:8761/actuator/health || exit 1
-ENTRYPOINT ["java","-jar","/app/target/ticket-service-0.0.1-SNAPSHOT.jar"]
+
+# Fix: Healthcheck should check THIS service, not discovery-service
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8082/actuator/health || exit 1
+
+# Simple entrypoint - no wait script needed for now
+ENTRYPOINT ["java", "-jar", "target/ticket-service-0.0.1-SNAPSHOT.jar"]
