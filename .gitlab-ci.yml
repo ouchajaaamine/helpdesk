@@ -1,72 +1,67 @@
-# Define pipeline stages.
+# Define pipeline stages
 stages:
   - build
   - test
   - docker_build
   - deploy
 
-# Global variables for all jobs.
+# Global variables for all jobs
 variables:
-  # Maven JVM options for caching and CI environment.
-  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
-  # Maven CLI options for CI-friendly builds.
+  # Maven JVM options - aligned with cache path
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  # Maven CLI options for CI-friendly builds
   MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
-  # Docker-in-Docker host.
-  DOCKER_HOST: "tcp://docker:2375"
-  # Disable Docker TLS for simplicity in CI.
-  DOCKER_TLS_CERTDIR: ""
+  # Docker configuration
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_DRIVER: overlay2
 
-# Cache Maven dependencies.
+# Cache Maven dependencies - Fixed path alignment
 cache:
-  # Unique cache key per branch.
-  key: ${CI_COMMIT_REF_SLUG}
-  # Path to cache Maven repository.
+  key: "$CI_COMMIT_REF_SLUG-maven"
   paths:
-    - .m2/repository
+    - .m2/repository/
+  policy: pull-push
 
-# Job to build the discovery-service.
+# Job to build the discovery-service
 build-discovery-service:
-  # Assign this job to the 'build' stage.
   stage: build
-  # Use a specific Docker image for Maven builds.
-  image: maven:3.8.7-openjdk-17
-  # Define the commands to execute for this job.
+  image: maven:3.9.4-eclipse-temurin-21
   script:
-    # Navigate to the discovery-service directory.
+    - echo "Building discovery-service..."
     - cd backend/discovery-service
-    # Execute Maven clean install to build the service.
-    - mvn $MAVEN_CLI_OPTS clean install
-  # Specify artifacts to save from this job.
+    - mvn $MAVEN_CLI_OPTS package -DskipTests
   artifacts:
     paths:
-      # Save the generated JAR file.
       - backend/discovery-service/target/*.jar
-    # Define when artifacts expire (e.g., after 1 week).
-    expire_in: 1 week
+  retry: 
+    max: 2
 
-# Job to test the discovery-service.
+# Job to test the discovery-service
 test-discovery-service:
   stage: test
-  image: maven:3.8.7-openjdk-17
-  # Dependencies: Fetch the JAR artifact from the build stage.
+  image: maven:3.9.4-eclipse-temurin-21
   dependencies:
     - build-discovery-service
   script:
+    - echo "Testing discovery-service..."
     - cd backend/discovery-service
     - mvn $MAVEN_CLI_OPTS test
-  # Only run if the build stage passed.
-  needs: ["build-discovery-service"]
+  artifacts:
+    reports:
+      junit:
+        - backend/discovery-service/target/surefire-reports/TEST-*.xml
 
-# Job to build and push Docker image for discovery-service.
+# Job to build and push Docker image for discovery-service
 docker_build-discovery-service:
-  stage: docker_build # Assign to docker_build stage.
-  image: docker:latest # Use Docker client image.
+  stage: docker_build
+  image: docker:latest
   services:
-    - docker:dind # Enable Docker-in-Docker.
+    - docker:dind
   dependencies:
-    - test-discovery-service # Requires test artifacts.
+    - test-discovery-service
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY # Login to registry.
-    - docker build -t $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHORT_SHA backend/discovery-service # Build image.
-    - docker push $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHORT_SHA # Push image to registry.
-  needs: ["test-discovery-service"] # Only run if test stage passed.
+    - echo "Building Docker image for discovery-service..."
+    - cd backend/discovery-service
+    - docker build -t discovery-service:$CI_COMMIT_SHA .
+    - echo "Docker image built successfully"
