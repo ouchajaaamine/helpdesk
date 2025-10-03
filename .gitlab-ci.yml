@@ -16,7 +16,7 @@ variables:
   DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_DRIVER: overlay2
 
-# Cache Maven dependencies - Fixed path alignment
+# Cache Maven dependencies
 cache:
   key: "$CI_COMMIT_REF_SLUG-maven"
   paths:
@@ -60,8 +60,20 @@ docker_build-discovery-service:
     - docker:dind
   dependencies:
     - test-discovery-service
+  before_script:
+    # Login to GitLab Container Registry
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - echo "Building Docker image for discovery-service..."
     - cd backend/discovery-service
-    - docker build -t discovery-service:$CI_COMMIT_SHA .
-    - echo "Docker image built successfully"
+    # Build with GitLab Registry tags
+    - docker build -t $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY_IMAGE/discovery-service:latest .
+    # Push to GitLab Container Registry
+    - docker push $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/discovery-service:latest
+    - echo "✅ Image pushed to: $CI_REGISTRY_IMAGE/discovery-service:latest"
+    - echo "✅ Tagged version: $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
