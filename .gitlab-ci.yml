@@ -126,3 +126,52 @@ docker_build-gateway-service:
   only:
     - main
     - develop
+
+build-user-service:
+  stage: build
+  image: maven:3.9.4-eclipse-temurin-21
+  script:
+    - echo "Building user-service..."
+    - cd backend/user-service
+    - mvn $MAVEN_CLI_OPTS clean package -DskipTests
+  artifacts:
+    paths:
+      - backend/user-service/target/*.jar
+    expire_in: 1 week
+
+test-user-service:
+  stage: test
+  image: maven:3.9.4-eclipse-temurin-21
+  dependencies:
+    - build-user-service
+  script:
+    - echo "Testing user-service..."
+    - cd backend/user-service
+    - mvn $MAVEN_CLI_OPTS test
+  artifacts:
+    reports:
+      junit:
+        - backend/user-service/target/surefire-reports/TEST-*.xml
+
+# Job to build and push Docker image for user-service
+docker_build-user-service:
+  stage: docker_build
+  image: docker:latest
+  services:
+    - docker:dind
+  dependencies:
+    - test-user-service
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - echo "Building Docker image for user-service..."
+    - cd backend/user-service
+    - docker build -t $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY_IMAGE/user-service:latest .
+    - docker push $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/user-service:latest
+    - echo "Image pushed to $CI_REGISTRY_IMAGE/user-service:latest"
+    - echo "Tagged version $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA"
+  only:
+    - main
+    - develop

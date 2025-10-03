@@ -1,0 +1,49 @@
+{
+  "clientId": "helpdesk-frontend",
+  "name": "helpdesk-frontend",
+  "description": "Helpdesk Frontend Application",
+  "publicClient": true,
+  "protocol": "openid-connect",
+  "enabled": true,
+  "bearerOnly": false,
+  "consentRequired": false,
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": true,
+  "serviceAccountsEnabled": false,
+  "authorizationServicesEnabled": false,
+  "redirectUris": [
+    "http://localhost:4200/*"
+  ],
+  "webOrigins": [
+    "http://localhost:4200"
+  ],
+  "adminUrl": "",
+  "baseUrl": "http://localhost:4200",
+  "surrogateAuthRequired": false,
+  "alwaysDisplayInConsole": false,
+  "nodeReRegistrationTimeout": -1,
+  "clientAuthenticatorType": "client-secret",
+  "defaultClientScopes": [
+    "web-origins",
+    "acr",
+    "profile",
+    "roles",
+    "email"
+  ],
+  "optionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access",
+    "microprofile-jwt"
+  ],
+  "fullScopeAllowed": true,
+  "notBefore": 0,
+  "access": {
+    "view": true,
+    "configure": true,
+    "manage": true
+  },
+  "origin": "http://localhost:4200",
+  "cors": true
+}
