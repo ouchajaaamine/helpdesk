@@ -144,10 +144,20 @@ test-user-service:
   image: maven:3.9.4-eclipse-temurin-21
   dependencies:
     - build-user-service
+  services:
+    - docker:dind
+  variables :
+    - DOCKER_HOST: tcp://docker:2376
+    - DOCKER_TLS_CERTDIR: ""
+    - DOCKER_DRIVER: overlay2
+    # Testcontainers specific settings
+    - TESTCONTAINERS_HOST_OVERRIDE: docker
+    - TESTCONTAINERS_RYUK_DISABLED: "true"
   script:
     - echo "Testing user-service..."
     - cd backend/user-service
     - mvn $MAVEN_CLI_OPTS test
+  needs: ["build-ticket-service"]
   artifacts:
     reports:
       junit:
