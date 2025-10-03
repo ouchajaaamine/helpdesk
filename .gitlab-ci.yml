@@ -127,6 +127,142 @@ docker_build-gateway-service:
     - main
     - develop
 
+# ===== USER SERVICE PIPELINE =====
+
+# Build user-service JAR
+build-user-service:
+  stage: build
+  image: maven:3.9.4-eclipse-temurin-21
+  script:
+    - echo "Building user-service..."
+    - cd backend/user-service
+    - mvn $MAVEN_CLI_OPTS package -DskipTests
+  artifacts:
+    paths:
+      - backend/user-service/target/*.jar
+    expire_in: 1 week
+  retry: 
+    max: 2
+
+# Test user-service with Testcontainers (PostgreSQL)
+test-user-service:
+  stage: test
+  image: maven:3.9.4-eclipse-temurin-21
+  services:
+    - docker:dind  # Required for Testcontainers
+  variables:
+    # Testcontainers config for GitLab CI
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+    TESTCONTAINERS_RYUK_DISABLED: "true"
+  dependencies:
+    - build-user-service
+  needs: 
+    - build-user-service  # Fix: needs must match dependencies
+  script:
+    - echo "Testing user-service with Testcontainers PostgreSQL..."
+    - cd backend/user-service
+    - mvn $MAVEN_CLI_OPTS test
+  artifacts:
+    reports:
+      junit:
+        - backend/user-service/target/surefire-reports/TEST-*.xml
+  timeout: 15 minutes
+
+# Build and push user-service Docker image
+docker_build-user-service:
+  stage: docker_build
+  image: docker:latest
+  services:
+    - docker:dind
+  dependencies:
+    - test-user-service
+  needs:
+    - test-user-service  # Only build image if tests pass
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - echo "Building Docker image for user-service..."
+    - cd backend/user-service
+    - docker build -t $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY_IMAGE/user-service:latest .
+    - docker push $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/user-service:latest
+    - echo "Image pushed to $CI_REGISTRY_IMAGE/user-service:latest"
+    - echo "Tagged version $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA"
+  only:
+    - main
+    - develop
+
+# ===== TICKET SERVICE PIPELINE =====
+
+# Build ticket-service JAR
+build-ticket-service:
+  stage: build
+  image: maven:3.9.4-eclipse-temurin-21
+  script:
+    - echo "Building ticket-service..."
+    - cd backend/ticket-service
+    - mvn $MAVEN_CLI_OPTS package -DskipTests
+  artifacts:
+    paths:
+      - backend/ticket-service/target/*.jar
+    expire_in: 1 week
+  retry: 
+    max: 2
+
+# Test ticket-service with Testcontainers (PostgreSQL)
+test-ticket-service:
+  stage: test
+  image: maven:3.9.4-eclipse-temurin-21
+  services:
+    - docker:dind  # Required for Testcontainers
+  variables:
+    # Testcontainers config for GitLab CI
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+    TESTCONTAINERS_RYUK_DISABLED: "true"
+  dependencies:
+    - build-ticket-service
+  needs:
+    - build-ticket-service  # Fix: needs must match dependencies
+  script:
+    - echo "Testing ticket-service with Testcontainers PostgreSQL..."
+    - cd backend/ticket-service
+    - mvn $MAVEN_CLI_OPTS test
+  artifacts:
+    reports:
+      junit:
+        - backend/ticket-service/target/surefire-reports/TEST-*.xml
+  timeout: 15 minutes
+
+# Build and push ticket-service Docker image
+docker_build-ticket-service:
+  stage: docker_build
+  image: docker:latest
+  services:
+    - docker:dind
+  dependencies:
+    - test-ticket-service
+  needs:
+    - test-ticket-service  # Only build image if tests pass
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - echo "Building Docker image for ticket-service..."
+    - cd backend/ticket-service
+    - docker build -t $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY_IMAGE/ticket-service:latest .
+    - docker push $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/ticket-service:latest
+    - echo "Image pushed to $CI_REGISTRY_IMAGE/ticket-service:latest"
+    - echo "Tagged version $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA"
+  only:
+    - main
+    - develop
+
 build-user-service:
   stage: build
   image: maven:3.9.4-eclipse-temurin-21
