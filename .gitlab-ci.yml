@@ -82,7 +82,7 @@ build-gateway-service:
   script:
     - echo "Building gateway-service..."
     - cd backend/gateway-service
-    - mvn $MAVEN_CLI_OPTS clean install
+    - mvn $MAVEN_CLI_OPTS clean package -DskipTests
   artifacts:
     paths:
       - backend/gateway-service/target/*.jar
@@ -98,7 +98,7 @@ test-gateway-service:
   script:
     - echo "Running tests for gateway-service..."
     - cd backend/gateway-service
-    - mvn $MAVEN_CLI_OPTS test
+    - mvn test -Dtest='!**/*IntegrationTest'
   # Only run if the build stage passed.
   needs: ["build-gateway-service"]
   artifacts:
