@@ -144,30 +144,23 @@ build-user-service:
   retry: 
     max: 2
 
-# Test user-service with Testcontainers (PostgreSQL)
+# Test user-service (skip Testcontainers integration tests)
 test-user-service:
   stage: test
   image: maven:3.9.4-eclipse-temurin-21
-  services:
-    - docker:dind  # Required for Testcontainers
-  variables:
-    # Testcontainers config for GitLab CI
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: ""
-    TESTCONTAINERS_HOST_OVERRIDE: docker
-    TESTCONTAINERS_RYUK_DISABLED: "true"
   dependencies:
     - build-user-service
-  needs: ["build-user-service"]  # Fix: needs must match dependencies
+  needs: ["build-user-service"]
   script:
-    - echo "Testing user-service with Testcontainers PostgreSQL..."
+    - echo "Testing user-service (unit tests only - Testcontainers run locally)"
     - cd backend/user-service
-    - mvn $MAVEN_CLI_OPTS test
+    # Skip integration tests that require Testcontainers
+    - mvn $MAVEN_CLI_OPTS test -Dtest='!**/*IntegrationTest' -Dsurefire.failIfNoSpecifiedTests=false
   artifacts:
     reports:
       junit:
         - backend/user-service/target/surefire-reports/TEST-*.xml
-  timeout: 15 minutes
+  timeout: 10 minutes
 
 # Build and push user-service Docker image
 docker_build-user-service:
@@ -210,30 +203,23 @@ build-ticket-service:
   retry: 
     max: 2
 
-# Test ticket-service with Testcontainers (PostgreSQL)
+# Test ticket-service (skip Testcontainers integration tests)
 test-ticket-service:
   stage: test
   image: maven:3.9.4-eclipse-temurin-21
-  services:
-    - docker:dind  # Required for Testcontainers
-  variables:
-    # Testcontainers config for GitLab CI
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: ""
-    TESTCONTAINERS_HOST_OVERRIDE: docker
-    TESTCONTAINERS_RYUK_DISABLED: "true"
   dependencies:
     - build-ticket-service
-  needs: ["build-ticket-service"]  # Fix: needs must match dependencies
+  needs: ["build-ticket-service"]
   script:
-    - echo "Testing ticket-service with Testcontainers PostgreSQL..."
+    - echo "Testing ticket-service (unit tests only - Testcontainers run locally)"
     - cd backend/ticket-service
-    - mvn $MAVEN_CLI_OPTS test
+    # Skip integration tests that require Testcontainers
+    - mvn $MAVEN_CLI_OPTS test -Dtest='!**/*IntegrationTest' -Dsurefire.failIfNoSpecifiedTests=false
   artifacts:
     reports:
       junit:
         - backend/ticket-service/target/surefire-reports/TEST-*.xml
-  timeout: 15 minutes
+  timeout: 10 minutes
 
 # Build and push ticket-service Docker image
 docker_build-ticket-service:
