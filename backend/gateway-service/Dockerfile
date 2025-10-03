@@ -3,6 +3,8 @@ WORKDIR /app
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
+# FIX: Convert line endings from Windows (CRLF) to Unix (LF) AND add execute permission
+RUN sed -i 's/\r$//' ./mvnw && chmod +x ./mvnw
 RUN ./mvnw dependency:go-offline -B
 COPY src src
 RUN ./mvnw package -DskipTests
