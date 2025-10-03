@@ -69,8 +69,8 @@ docker_build-discovery-service:
     - docker build -t $CI_REGISTRY_IMAGE/discovery-service:latest .
     - docker push $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/discovery-service:latest
-    - echo "✅ Image pushed to: $CI_REGISTRY_IMAGE/discovery-service:latest"
-    - echo "✅ Tagged version: $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA"
+    - echo "Image pushed to $CI_REGISTRY_IMAGE/discovery-service:latest"
+    - echo "Tagged version $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA"
   only:
     - main
     - develop
