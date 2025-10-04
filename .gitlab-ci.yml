@@ -77,8 +77,8 @@ docker_build-discovery-service:
     # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/discovery-service:latest .
-    # Save image as tar file for Trivy scanning
-    - docker save $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA -o ../../discovery-service-image.tar
+    # Save BOTH tagged images in the tar file
+    - docker save $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE/discovery-service:latest -o ../../discovery-service-image.tar
     - echo "Image built locally and saved as tar - ready for Trivy security scan"
     # Debug: Show file information
     - ls -la ../../discovery-service-image.tar
@@ -139,8 +139,8 @@ docker_build-gateway-service:
     # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/gateway-service:latest .
-    # Save image as tar file for Trivy scanning
-    - docker save $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA -o ../../gateway-service-image.tar
+    # Save BOTH tagged images in the tar file
+    - docker save $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE/gateway-service:latest -o ../../gateway-service-image.tar
     - echo "Image built locally and saved as tar - ready for Trivy security scan"
     # Note: Images will be pushed only after Trivy security scan passes
   artifacts:
@@ -204,8 +204,8 @@ docker_build-user-service:
     # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/user-service:latest .
-    # Save image as tar file for Trivy scanning
-    - docker save $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA -o ../../user-service-image.tar
+    # Save BOTH tagged images in the tar file
+    - docker save $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE/user-service:latest -o ../../user-service-image.tar
     - echo "Image built locally and saved as tar - ready for Trivy security scan"
     # Note: Images will be pushed only after Trivy security scan passes
   artifacts:
@@ -269,8 +269,8 @@ docker_build-ticket-service:
     # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/ticket-service:latest .
-    # Save image as tar file for Trivy scanning
-    - docker save $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA -o ../../ticket-service-image.tar
+    # Save BOTH tagged images in the tar file
+    - docker save $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE/ticket-service:latest -o ../../ticket-service-image.tar
     - echo "Image built locally and saved as tar - ready for Trivy security scan"
     # Note: Images will be pushed only after Trivy security scan passes
   artifacts:
@@ -539,6 +539,8 @@ docker_push-discovery-service:
     - echo "Pushing security-scanned discovery-service image to registry..."
     # Load image from tar file and push to registry
     - docker load -i discovery-service-image.tar
+    # Debug: Verify loaded images
+    - docker images | grep discovery-service
     - docker push $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/discovery-service:latest
     - echo "Secure image pushed to $CI_REGISTRY_IMAGE/discovery-service:latest"
@@ -563,6 +565,8 @@ docker_push-gateway-service:
     - echo "Pushing security-scanned gateway-service image to registry..."
     # Load image from tar file and push to registry
     - docker load -i gateway-service-image.tar
+    # Debug: Verify loaded images
+    - docker images | grep gateway-service
     - docker push $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/gateway-service:latest
     - echo "Secure image pushed to $CI_REGISTRY_IMAGE/gateway-service:latest"
@@ -587,6 +591,8 @@ docker_push-user-service:
     - echo "Pushing security-scanned user-service image to registry..."
     # Load image from tar file and push to registry
     - docker load -i user-service-image.tar
+    # Debug: Verify loaded images
+    - docker images | grep user-service
     - docker push $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/user-service:latest
     - echo "Secure image pushed to $CI_REGISTRY_IMAGE/user-service:latest"
@@ -611,6 +617,8 @@ docker_push-ticket-service:
     - echo "Pushing security-scanned ticket-service image to registry..."
     # Load image from tar file and push to registry
     - docker load -i ticket-service-image.tar
+    # Debug: Verify loaded images
+    - docker images | grep ticket-service
     - docker push $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/ticket-service:latest
     - echo "Secure image pushed to $CI_REGISTRY_IMAGE/ticket-service:latest"
