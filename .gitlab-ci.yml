@@ -15,12 +15,16 @@ variables:
   DOCKER_HOST: tcp://docker:2376
   DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_DRIVER: overlay2
+  # SonarCloud configuration
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Cache location for SonarQube analysis
+  GIT_DEPTH: "0"  # Fetch full git history for better SonarQube analysis
 
-# Cache Maven dependencies
+# Cache Maven dependencies and SonarQube analysis data
 cache:
   key: "$CI_COMMIT_REF_SLUG-maven"
   paths:
     - .m2/repository/
+    - .sonar/cache  # Cache SonarQube analysis data for faster runs
   policy: pull-push
 
 # Job to build the discovery-service
@@ -241,6 +245,88 @@ docker_build-ticket-service:
     - docker push $CI_REGISTRY_IMAGE/ticket-service:latest
     - echo "Image pushed to $CI_REGISTRY_IMAGE/ticket-service:latest"
     - echo "Tagged version $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA"
+  only:
+    - main
+    - develop
+
+# ===== SONARCLOUD CODE QUALITY ANALYSIS =====
+
+# 🔍 Analyze discovery-service code quality
+sonar-discovery-service:
+  stage: test
+  image: maven:3.9.4-eclipse-temurin-21
+  dependencies:
+    - build-discovery-service
+  needs: ["build-discovery-service"]
+  script:
+    - echo " Running SonarCloud analysis for discovery-service..."
+    - cd backend/discovery-service
+    - mvn $MAVEN_CLI_OPTS verify sonar:sonar
+      -Dsonar.projectKey=ouchajaaamine_helpdesk-discovery
+      -Dsonar.projectName="Helpdesk - Discovery Service"
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.login=$SONAR_TOKEN
+  allow_failure: true  # Don't block pipeline initially (learning mode)
+  only:
+    - main
+    - develop
+
+# 🔍 Analyze gateway-service code quality
+sonar-gateway-service:
+  stage: test
+  image: maven:3.9.4-eclipse-temurin-21
+  dependencies:
+    - build-gateway-service
+  needs: ["build-gateway-service"]
+  script:
+    - echo "🔍 Running SonarCloud analysis for gateway-service..."
+    - cd backend/gateway-service
+    - mvn $MAVEN_CLI_OPTS verify sonar:sonar
+      -Dsonar.projectKey=ouchajaaamine_helpdesk-gateway
+      -Dsonar.projectName="Helpdesk - Gateway Service"
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.login=$SONAR_TOKEN
+  allow_failure: true
+  only:
+    - main
+    - develop
+
+# 🔍 Analyze user-service code quality
+sonar-user-service:
+  stage: test
+  image: maven:3.9.4-eclipse-temurin-21
+  dependencies:
+    - build-user-service
+  needs: ["build-user-service"]
+  script:
+    - echo "🔍 Running SonarCloud analysis for user-service..."
+    - cd backend/user-service
+    - mvn $MAVEN_CLI_OPTS verify sonar:sonar
+      -Dsonar.projectKey=ouchajaaamine_helpdesk-user
+      -Dsonar.projectName="Helpdesk - User Service"
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.login=$SONAR_TOKEN
+  allow_failure: true
+  only:
+    - main
+    - develop
+
+# 🔍 Analyze ticket-service code quality
+sonar-ticket-service:
+  stage: test
+  image: maven:3.9.4-eclipse-temurin-21
+  dependencies:
+    - build-ticket-service
+  needs: ["build-ticket-service"]
+  script:
+    - echo "🔍 Running SonarCloud analysis for ticket-service..."
+    - cd backend/ticket-service
+    - mvn $MAVEN_CLI_OPTS verify sonar:sonar
+      -Dsonar.projectKey=ouchajaaamine_helpdesk-ticket
+      -Dsonar.projectName="Helpdesk - Ticket Service"
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.login=$SONAR_TOKEN
+  allow_failure: true
   only:
     - main
     - develop
