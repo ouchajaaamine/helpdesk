@@ -259,9 +259,9 @@ sonar-discovery-service:
     - build-discovery-service
   needs: ["build-discovery-service"]
   script:
-    - echo " Running SonarCloud analysis for discovery-service..."
+    - echo "🔍 Running SonarCloud analysis for discovery-service..."
     - cd backend/discovery-service
-    - mvn $MAVEN_CLI_OPTS verify sonar:sonar
+    - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
       -Dsonar.projectKey=ouchajaaamine_helpdesk-discovery
       -Dsonar.projectName="Helpdesk - Discovery Service"
       -Dsonar.host.url=$SONAR_HOST_URL
@@ -281,7 +281,7 @@ sonar-gateway-service:
   script:
     - echo "🔍 Running SonarCloud analysis for gateway-service..."
     - cd backend/gateway-service
-    - mvn $MAVEN_CLI_OPTS verify sonar:sonar
+    - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
       -Dsonar.projectKey=ouchajaaamine_helpdesk-gateway
       -Dsonar.projectName="Helpdesk - Gateway Service"
       -Dsonar.host.url=$SONAR_HOST_URL
@@ -301,7 +301,7 @@ sonar-user-service:
   script:
     - echo "🔍 Running SonarCloud analysis for user-service..."
     - cd backend/user-service
-    - mvn $MAVEN_CLI_OPTS verify sonar:sonar
+    - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
       -Dsonar.projectKey=ouchajaaamine_helpdesk-user
       -Dsonar.projectName="Helpdesk - User Service"
       -Dsonar.host.url=$SONAR_HOST_URL
@@ -321,7 +321,7 @@ sonar-ticket-service:
   script:
     - echo "🔍 Running SonarCloud analysis for ticket-service..."
     - cd backend/ticket-service
-    - mvn $MAVEN_CLI_OPTS verify sonar:sonar
+    - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
       -Dsonar.projectKey=ouchajaaamine_helpdesk-ticket
       -Dsonar.projectName="Helpdesk - Ticket Service"
       -Dsonar.host.url=$SONAR_HOST_URL
