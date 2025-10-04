@@ -505,7 +505,7 @@ docker_push-discovery-service:
   dependencies:
     - docker_build-discovery-service
     - trivy-discovery-service
-  needs: ["trivy-discovery-service"]
+  needs: ["docker_build-discovery-service", "trivy-discovery-service"]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
@@ -528,7 +528,7 @@ docker_push-gateway-service:
   dependencies:
     - docker_build-gateway-service
     - trivy-gateway-service
-  needs: ["trivy-gateway-service"]
+  needs: ["docker_build-gateway-service", "trivy-gateway-service"]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
@@ -551,7 +551,7 @@ docker_push-user-service:
   dependencies:
     - docker_build-user-service
     - trivy-user-service
-  needs: ["trivy-user-service"]
+  needs: ["docker_build-user-service", "trivy-user-service"]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
@@ -574,7 +574,7 @@ docker_push-ticket-service:
   dependencies:
     - docker_build-ticket-service
     - trivy-ticket-service
-  needs: ["trivy-ticket-service"]
+  needs: ["docker_build-ticket-service", "trivy-ticket-service"]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
