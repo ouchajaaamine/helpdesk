@@ -77,8 +77,17 @@ docker_build-discovery-service:
     # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/discovery-service:latest .
-    - echo "Image built locally - pending Trivy security scan before registry push"
+    # Save image as tar file for Trivy scanning
+    - docker save $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA -o ../../discovery-service-image.tar
+    - echo "Image built locally and saved as tar - ready for Trivy security scan"
+    # Debug: Show file information
+    - ls -la ../../discovery-service-image.tar
+    - du -h ../../discovery-service-image.tar
     # Note: Images will be pushed only after Trivy security scan passes
+  artifacts:
+    paths:
+      - discovery-service-image.tar
+    expire_in: 1 hour
   only:
     - main
     - develop
@@ -130,8 +139,14 @@ docker_build-gateway-service:
     # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/gateway-service:latest .
-    - echo "Image built locally - pending Trivy security scan before registry push"
+    # Save image as tar file for Trivy scanning
+    - docker save $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA -o ../../gateway-service-image.tar
+    - echo "Image built locally and saved as tar - ready for Trivy security scan"
     # Note: Images will be pushed only after Trivy security scan passes
+  artifacts:
+    paths:
+      - gateway-service-image.tar
+    expire_in: 1 hour
   only:
     - main
     - develop
@@ -189,8 +204,14 @@ docker_build-user-service:
     # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/user-service:latest .
-    - echo "Image built locally - pending Trivy security scan before registry push"
+    # Save image as tar file for Trivy scanning
+    - docker save $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA -o ../../user-service-image.tar
+    - echo "Image built locally and saved as tar - ready for Trivy security scan"
     # Note: Images will be pushed only after Trivy security scan passes
+  artifacts:
+    paths:
+      - user-service-image.tar
+    expire_in: 1 hour
   only:
     - main
     - develop
@@ -248,8 +269,14 @@ docker_build-ticket-service:
     # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/ticket-service:latest .
-    - echo "Image built locally - pending Trivy security scan before registry push"
+    # Save image as tar file for Trivy scanning
+    - docker save $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA -o ../../ticket-service-image.tar
+    - echo "Image built locally and saved as tar - ready for Trivy security scan"
     # Note: Images will be pushed only after Trivy security scan passes
+  artifacts:
+    paths:
+      - ticket-service-image.tar
+    expire_in: 1 hour
   only:
     - main
     - develop
@@ -360,10 +387,10 @@ trivy-discovery-service:
     TRIVY_TIMEOUT: "10m"                             # Set scan timeout to 10 minutes
   script:
     - echo "Running Trivy security scan for discovery-service..."
-    - echo "Scanning image $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA"
+    - echo "Scanning tar file discovery-service-image.tar"
     - trivy image --download-db-only
-    - trivy image --format sarif --output discovery-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
-    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
+    - trivy image --format sarif --output discovery-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 --input discovery-service-image.tar
+    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM --input discovery-service-image.tar
     - echo "Security scan completed - check artifacts for detailed report"
   artifacts:
     reports:
@@ -398,10 +425,10 @@ trivy-gateway-service:
     TRIVY_TIMEOUT: "10m"                             # Set scan timeout to 10 minutes
   script:
     - echo "Running Trivy security scan for gateway-service..."
-    - echo "Scanning image $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA"
+    - echo "Scanning tar file gateway-service-image.tar"
     - trivy image --download-db-only
-    - trivy image --format sarif --output gateway-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA
-    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA
+    - trivy image --format sarif --output gateway-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 --input gateway-service-image.tar
+    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM --input gateway-service-image.tar
     - echo "Security scan completed - check artifacts for detailed report"
   artifacts:
     reports:
@@ -436,10 +463,10 @@ trivy-user-service:
     TRIVY_TIMEOUT: "10m"                             # Set scan timeout to 10 minutes
   script:
     - echo "Running Trivy security scan for user-service..."
-    - echo "Scanning image $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA"
+    - echo "Scanning tar file user-service-image.tar"
     - trivy image --download-db-only
-    - trivy image --format sarif --output user-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
-    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
+    - trivy image --format sarif --output user-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 --input user-service-image.tar
+    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM --input user-service-image.tar
     - echo "Security scan completed - check artifacts for detailed report"
   artifacts:
     reports:
@@ -474,10 +501,10 @@ trivy-ticket-service:
     TRIVY_TIMEOUT: "10m"                             # Set scan timeout to 10 minutes
   script:
     - echo "Running Trivy security scan for ticket-service..."
-    - echo "Scanning image $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA"
+    - echo "Scanning tar file ticket-service-image.tar"
     - trivy image --download-db-only
-    - trivy image --format sarif --output ticket-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
-    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
+    - trivy image --format sarif --output ticket-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 --input ticket-service-image.tar
+    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM --input ticket-service-image.tar
     - echo "Security scan completed - check artifacts for detailed report"
   artifacts:
     reports:
@@ -510,7 +537,8 @@ docker_push-discovery-service:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - echo "Pushing security-scanned discovery-service image to registry..."
-    # Images were built in docker_build stage, now push them
+    # Load image from tar file and push to registry
+    - docker load -i discovery-service-image.tar
     - docker push $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/discovery-service:latest
     - echo "Secure image pushed to $CI_REGISTRY_IMAGE/discovery-service:latest"
@@ -533,7 +561,8 @@ docker_push-gateway-service:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - echo "Pushing security-scanned gateway-service image to registry..."
-    # Images were built in docker_build stage, now push them
+    # Load image from tar file and push to registry
+    - docker load -i gateway-service-image.tar
     - docker push $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/gateway-service:latest
     - echo "Secure image pushed to $CI_REGISTRY_IMAGE/gateway-service:latest"
@@ -556,7 +585,8 @@ docker_push-user-service:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - echo "Pushing security-scanned user-service image to registry..."
-    # Images were built in docker_build stage, now push them
+    # Load image from tar file and push to registry
+    - docker load -i user-service-image.tar
     - docker push $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/user-service:latest
     - echo "Secure image pushed to $CI_REGISTRY_IMAGE/user-service:latest"
@@ -579,7 +609,8 @@ docker_push-ticket-service:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - echo "Pushing security-scanned ticket-service image to registry..."
-    # Images were built in docker_build stage, now push them
+    # Load image from tar file and push to registry
+    - docker load -i ticket-service-image.tar
     - docker push $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE/ticket-service:latest
     - echo "Secure image pushed to $CI_REGISTRY_IMAGE/ticket-service:latest"
