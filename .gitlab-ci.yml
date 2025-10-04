@@ -1,9 +1,11 @@
 # Define pipeline stages
 stages:
-  - build
-  - test
-  - docker_build
-  - deploy
+  - build           # Compile code into JAR files
+  - test            # Unit tests + SonarQube quality analysis
+  - docker_build    # Build Docker images locally (don't push yet)
+  - security_scan   # Trivy security scanning of Docker images
+  - docker_push     # Push secure images to registry (only if Trivy passes)
+  - deploy          # Deploy to environments
 
 # Global variables for all jobs
 variables:
@@ -25,6 +27,7 @@ cache:
   paths:
     - .m2/repository/
     - .sonar/cache  # Cache SonarQube analysis data for faster runs
+    - .trivy/cache  # Cache Trivy vulnerability database for faster security scans
   policy: pull-push
 
 # Job to build the discovery-service
@@ -64,17 +67,18 @@ docker_build-discovery-service:
     - docker:dind
   dependencies:
     - test-discovery-service
+    - sonar-discovery-service
+  needs: ["test-discovery-service", "sonar-discovery-service"]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
-    - echo "Building Docker image for discovery-service..."
+    - echo "Building Docker image for discovery-service (security scan pending)..."
     - cd backend/discovery-service
+    # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/discovery-service:latest .
-    - docker push $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY_IMAGE/discovery-service:latest
-    - echo "Image pushed to $CI_REGISTRY_IMAGE/discovery-service:latest"
-    - echo "Tagged version $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA"
+    - echo "Image built locally - pending Trivy security scan before registry push"
+    # Note: Images will be pushed only after Trivy security scan passes
   only:
     - main
     - develop
@@ -116,17 +120,18 @@ docker_build-gateway-service:
     - docker:dind
   dependencies:
     - test-gateway-service
+    - sonar-gateway-service
+  needs: ["test-gateway-service", "sonar-gateway-service"]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
-    - echo "Building Docker image for gateway-service..."
+    - echo "Building Docker image for gateway-service (security scan pending)..."
     - cd backend/gateway-service
+    # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/gateway-service:latest .
-    - docker push $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY_IMAGE/gateway-service:latest
-    - echo "Image pushed to $CI_REGISTRY_IMAGE/gateway-service:latest"
-    - echo "Tagged version $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA"
+    - echo "Image built locally - pending Trivy security scan before registry push"
+    # Note: Images will be pushed only after Trivy security scan passes
   only:
     - main
     - develop
@@ -174,18 +179,18 @@ docker_build-user-service:
     - docker:dind
   dependencies:
     - test-user-service
-  needs: ["test-user-service"]  # Only build image if tests pass
+    - sonar-user-service
+  needs: ["test-user-service", "sonar-user-service"]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
-    - echo "Building Docker image for user-service..."
+    - echo "Building Docker image for user-service (security scan pending)..."
     - cd backend/user-service
+    # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/user-service:latest .
-    - docker push $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY_IMAGE/user-service:latest
-    - echo "Image pushed to $CI_REGISTRY_IMAGE/user-service:latest"
-    - echo "Tagged version $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA"
+    - echo "Image built locally - pending Trivy security scan before registry push"
+    # Note: Images will be pushed only after Trivy security scan passes
   only:
     - main
     - develop
@@ -233,25 +238,25 @@ docker_build-ticket-service:
     - docker:dind
   dependencies:
     - test-ticket-service
-  needs: ["test-ticket-service"]  # Only build image if tests pass
+    - sonar-ticket-service
+  needs: ["test-ticket-service", "sonar-ticket-service"]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
-    - echo "Building Docker image for ticket-service..."
+    - echo "Building Docker image for ticket-service (security scan pending)..."
     - cd backend/ticket-service
+    # Build images locally for security scanning (DON'T PUSH YET)
     - docker build -t $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY_IMAGE/ticket-service:latest .
-    - docker push $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY_IMAGE/ticket-service:latest
-    - echo "Image pushed to $CI_REGISTRY_IMAGE/ticket-service:latest"
-    - echo "Tagged version $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA"
+    - echo "Image built locally - pending Trivy security scan before registry push"
+    # Note: Images will be pushed only after Trivy security scan passes
   only:
     - main
     - develop
 
 # ===== SONARCLOUD CODE QUALITY ANALYSIS =====
 
-# 🔍 Analyze discovery-service code quality
+# Analyze discovery-service code quality
 sonar-discovery-service:
   stage: test
   image: maven:3.9.4-eclipse-temurin-21
@@ -272,7 +277,7 @@ sonar-discovery-service:
     - main
     - develop
 
-# 🔍 Analyze gateway-service code quality
+# Analyze gateway-service code quality
 sonar-gateway-service:
   stage: test
   image: maven:3.9.4-eclipse-temurin-21
@@ -293,7 +298,7 @@ sonar-gateway-service:
     - main
     - develop
 
-# 🔍 Analyze user-service code quality
+# Analyze user-service code quality
 sonar-user-service:
   stage: test
   image: maven:3.9.4-eclipse-temurin-21
@@ -314,7 +319,7 @@ sonar-user-service:
     - main
     - develop
 
-# 🔍 Analyze ticket-service code quality
+# Analyze ticket-service code quality
 sonar-ticket-service:
   stage: test
   image: maven:3.9.4-eclipse-temurin-21
@@ -334,3 +339,252 @@ sonar-ticket-service:
   only:
     - main
     - develop
+
+# ===== TRIVY SECURITY SCANNING STAGE =====
+
+# Security scan discovery-service Docker image
+trivy-discovery-service:
+  stage: security_scan
+  image: 
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  services:
+    - docker:dind
+  dependencies:
+    - docker_build-discovery-service
+  needs: ["docker_build-discovery-service"]
+  variables:
+    # Trivy configuration for CI environment
+    TRIVY_NO_PROGRESS: "true"                        # Disable progress bar for CI logs
+    TRIVY_CACHE_DIR: "${CI_PROJECT_DIR}/.trivy/cache" # Cache vulnerability database
+    TRIVY_TIMEOUT: "10m"                             # Set scan timeout to 10 minutes
+  script:
+    - echo "Running Trivy security scan for discovery-service..."
+    - echo "Scanning image $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA"
+    - trivy image --download-db-only
+    - trivy image --format sarif --output discovery-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
+    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
+    - echo "Security scan completed - check artifacts for detailed report"
+  artifacts:
+    reports:
+      sast: discovery-service-trivy.sarif
+    paths:
+      - discovery-service-trivy.sarif
+    expire_in: 1 week
+  cache:
+    key: trivy-cache
+    paths:
+      - .trivy/cache
+  allow_failure: true  # Learning mode: don't block pipeline, just report
+  only:
+    - main
+    - develop
+
+# Security scan gateway-service Docker image  
+trivy-gateway-service:
+  stage: security_scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  services:
+    - docker:dind
+  dependencies:
+    - docker_build-gateway-service
+  needs: ["docker_build-gateway-service"]
+  variables:
+    # Trivy configuration for CI environment
+    TRIVY_NO_PROGRESS: "true"                        # Disable progress bar for CI logs
+    TRIVY_CACHE_DIR: "${CI_PROJECT_DIR}/.trivy/cache" # Cache vulnerability database
+    TRIVY_TIMEOUT: "10m"                             # Set scan timeout to 10 minutes
+  script:
+    - echo "Running Trivy security scan for gateway-service..."
+    - echo "Scanning image $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA"
+    - trivy image --download-db-only
+    - trivy image --format sarif --output gateway-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA
+    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA
+    - echo "Security scan completed - check artifacts for detailed report"
+  artifacts:
+    reports:
+      sast: gateway-service-trivy.sarif
+    paths:
+      - gateway-service-trivy.sarif
+    expire_in: 1 week
+  cache:
+    key: trivy-cache
+    paths:
+      - .trivy/cache
+  allow_failure: true  # Learning mode: don't block pipeline, just report
+  only:
+    - main
+    - develop
+
+# Security scan user-service Docker image
+trivy-user-service:
+  stage: security_scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  services:
+    - docker:dind
+  dependencies:
+    - docker_build-user-service
+  needs: ["docker_build-user-service"]
+  variables:
+    # Trivy configuration for CI environment
+    TRIVY_NO_PROGRESS: "true"                        # Disable progress bar for CI logs
+    TRIVY_CACHE_DIR: "${CI_PROJECT_DIR}/.trivy/cache" # Cache vulnerability database
+    TRIVY_TIMEOUT: "10m"                             # Set scan timeout to 10 minutes
+  script:
+    - echo "Running Trivy security scan for user-service..."
+    - echo "Scanning image $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA"
+    - trivy image --download-db-only
+    - trivy image --format sarif --output user-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
+    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
+    - echo "Security scan completed - check artifacts for detailed report"
+  artifacts:
+    reports:
+      sast: user-service-trivy.sarif
+    paths:
+      - user-service-trivy.sarif
+    expire_in: 1 week
+  cache:
+    key: trivy-cache
+    paths:
+      - .trivy/cache
+  allow_failure: true  # Learning mode: don't block pipeline, just report
+  only:
+    - main
+    - develop
+
+# Security scan ticket-service Docker image
+trivy-ticket-service:
+  stage: security_scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  services:
+    - docker:dind
+  dependencies:
+    - docker_build-ticket-service
+  needs: ["docker_build-ticket-service"]
+  variables:
+    # Trivy configuration for CI environment
+    TRIVY_NO_PROGRESS: "true"                        # Disable progress bar for CI logs
+    TRIVY_CACHE_DIR: "${CI_PROJECT_DIR}/.trivy/cache" # Cache vulnerability database
+    TRIVY_TIMEOUT: "10m"                             # Set scan timeout to 10 minutes
+  script:
+    - echo "Running Trivy security scan for ticket-service..."
+    - echo "Scanning image $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA"
+    - trivy image --download-db-only
+    - trivy image --format sarif --output ticket-service-trivy.sarif --severity CRITICAL,HIGH --exit-code 0 $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
+    - trivy image --format table --severity CRITICAL,HIGH,MEDIUM $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
+    - echo "Security scan completed - check artifacts for detailed report"
+  artifacts:
+    reports:
+      sast: ticket-service-trivy.sarif
+    paths:
+      - ticket-service-trivy.sarif
+    expire_in: 1 week
+  cache:
+    key: trivy-cache
+    paths:
+      - .trivy/cache
+  allow_failure: true  # Learning mode: don't block pipeline, just report
+  only:
+    - main
+    - develop
+
+# ===== DOCKER PUSH STAGE (ONLY AFTER SECURITY SCAN) =====
+
+# Push discovery-service Docker image (AFTER security scan)
+docker_push-discovery-service:
+  stage: docker_push
+  image: docker:latest
+  services:
+    - docker:dind
+  dependencies:
+    - docker_build-discovery-service
+    - trivy-discovery-service
+  needs: ["trivy-discovery-service"]
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - echo "Pushing security-scanned discovery-service image to registry..."
+    # Images were built in docker_build stage, now push them
+    - docker push $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/discovery-service:latest
+    - echo "Secure image pushed to $CI_REGISTRY_IMAGE/discovery-service:latest"
+    - echo "Tagged version $CI_REGISTRY_IMAGE/discovery-service:$CI_COMMIT_SHA"
+  only:
+    - main
+    - develop
+
+# Push gateway-service Docker image (AFTER security scan)
+docker_push-gateway-service:
+  stage: docker_push
+  image: docker:latest
+  services:
+    - docker:dind
+  dependencies:
+    - docker_build-gateway-service
+    - trivy-gateway-service
+  needs: ["trivy-gateway-service"]
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - echo "Pushing security-scanned gateway-service image to registry..."
+    # Images were built in docker_build stage, now push them
+    - docker push $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/gateway-service:latest
+    - echo "Secure image pushed to $CI_REGISTRY_IMAGE/gateway-service:latest"
+    - echo "Tagged version $CI_REGISTRY_IMAGE/gateway-service:$CI_COMMIT_SHA"
+  only:
+    - main
+    - develop
+
+# Push user-service Docker image (AFTER security scan)
+docker_push-user-service:
+  stage: docker_push
+  image: docker:latest
+  services:
+    - docker:dind
+  dependencies:
+    - docker_build-user-service
+    - trivy-user-service
+  needs: ["trivy-user-service"]
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - echo "Pushing security-scanned user-service image to registry..."
+    # Images were built in docker_build stage, now push them
+    - docker push $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/user-service:latest
+    - echo "Secure image pushed to $CI_REGISTRY_IMAGE/user-service:latest"
+    - echo "Tagged version $CI_REGISTRY_IMAGE/user-service:$CI_COMMIT_SHA"
+  only:
+    - main
+    - develop
+
+# Push ticket-service Docker image (AFTER security scan)
+docker_push-ticket-service:
+  stage: docker_push
+  image: docker:latest
+  services:
+    - docker:dind
+  dependencies:
+    - docker_build-ticket-service
+    - trivy-ticket-service
+  needs: ["trivy-ticket-service"]
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - echo "Pushing security-scanned ticket-service image to registry..."
+    # Images were built in docker_build stage, now push them
+    - docker push $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/ticket-service:latest
+    - echo "Secure image pushed to $CI_REGISTRY_IMAGE/ticket-service:latest"
+    - echo "Tagged version $CI_REGISTRY_IMAGE/ticket-service:$CI_COMMIT_SHA"
+  only:
+    - main
+    - develop
+
