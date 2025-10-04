@@ -262,8 +262,9 @@ sonar-discovery-service:
     - echo "🔍 Running SonarCloud analysis for discovery-service..."
     - cd backend/discovery-service
     - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
-      -Dsonar.projectKey=ouchajaaamine_helpdesk-discovery
-      -Dsonar.projectName="Helpdesk - Discovery Service"
+      -Dsonar.projectKey=ouchajaaamine_helpdesk
+      -Dsonar.projectName="Helpdesk Microservices"
+      -Dsonar.moduleKey=discovery-service
       -Dsonar.host.url=$SONAR_HOST_URL
       -Dsonar.login=$SONAR_TOKEN
   allow_failure: true  # Don't block pipeline initially (learning mode)
@@ -282,8 +283,9 @@ sonar-gateway-service:
     - echo "🔍 Running SonarCloud analysis for gateway-service..."
     - cd backend/gateway-service
     - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
-      -Dsonar.projectKey=ouchajaaamine_helpdesk-gateway
-      -Dsonar.projectName="Helpdesk - Gateway Service"
+      -Dsonar.projectKey=ouchajaaamine_helpdesk
+      -Dsonar.projectName="Helpdesk Microservices"
+      -Dsonar.moduleKey=gateway-service
       -Dsonar.host.url=$SONAR_HOST_URL
       -Dsonar.login=$SONAR_TOKEN
   allow_failure: true
@@ -302,8 +304,9 @@ sonar-user-service:
     - echo "🔍 Running SonarCloud analysis for user-service..."
     - cd backend/user-service
     - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
-      -Dsonar.projectKey=ouchajaaamine_helpdesk-user
-      -Dsonar.projectName="Helpdesk - User Service"
+      -Dsonar.projectKey=ouchajaaamine_helpdesk
+      -Dsonar.projectName="Helpdesk Microservices"
+      -Dsonar.moduleKey=user-service
       -Dsonar.host.url=$SONAR_HOST_URL
       -Dsonar.login=$SONAR_TOKEN
   allow_failure: true
@@ -322,8 +325,9 @@ sonar-ticket-service:
     - echo "🔍 Running SonarCloud analysis for ticket-service..."
     - cd backend/ticket-service
     - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
-      -Dsonar.projectKey=ouchajaaamine_helpdesk-ticket
-      -Dsonar.projectName="Helpdesk - Ticket Service"
+      -Dsonar.projectKey=ouchajaaamine_helpdesk
+      -Dsonar.projectName="Helpdesk Microservices"
+      -Dsonar.moduleKey=ticket-service
       -Dsonar.host.url=$SONAR_HOST_URL
       -Dsonar.login=$SONAR_TOKEN
   allow_failure: true
