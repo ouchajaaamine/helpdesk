@@ -19,9 +19,16 @@ deploy-to-azure-vm:
     - apk add --no-cache openssh-client curl
     # Setup SSH key for Azure VM access
     - eval $(ssh-agent -s)
-    - echo "$AZURE_VM_SSH_KEY" | tr -d '\r' | ssh-add -
+    # Create SSH key file with proper permissions
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
+    - echo "$AZURE_VM_SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    # Debug: Check if key file is created and has content
+    - ls -la ~/.ssh/id_rsa
+    - head -n 1 ~/.ssh/id_rsa
+    # Add key to agent
+    - ssh-add ~/.ssh/id_rsa
     - ssh-keyscan -H $AZURE_VM_IP >> ~/.ssh/known_hosts
   script:
     - echo "Testing deployment to Azure VM at $AZURE_VM_IP"
