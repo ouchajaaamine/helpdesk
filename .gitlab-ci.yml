@@ -657,54 +657,37 @@ deploy-to-azure-vm:
     - ssh-keyscan -H $AZURE_VM_IP >> ~/.ssh/known_hosts
   script:
     - echo "Deploying helpdesk microservices to Azure VM at $AZURE_VM_IP"
-    
-    # Transfer production docker-compose file to VM
     - echo "Transferring docker-compose.prod.yml to VM"
     - scp docker-compose.prod.yml $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/
-    
-    # Transfer supporting files if they exist
     - echo "Transferring deployment scripts and configuration"
-    - scp setup-keycloak-realm.sh $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ || echo "Warning: setup-keycloak-realm.sh not found, skipping"
-    - scp -r keycloak-import $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ 2>/dev/null || echo "Warning: keycloak-import directory not found, skipping"
-    
-    # Execute deployment commands on the Azure VM
+    - scp setup-keycloak-realm.sh $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ || true
+    - scp -r keycloak-import $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ || true
     - echo "Connecting to VM and executing deployment commands"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && echo 'Starting deployment process'"
-    
-    # Login to GitLab Registry on VM
+    - echo "Login to GitLab Registry on VM"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY"
-    
-    # Stop existing services
+    - echo "Stop existing services"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml down || true"
-    
-    # Clean up old images
+    - echo "Clean up old images"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "docker image prune -f || true"
-    
-    # Pull latest images
+    - echo "Pull latest images"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml pull"
-    
-    # Start services
+    - echo "Start services"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml up -d"
-    
-    # Wait for services to start
+    - echo "Wait for services to start"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "sleep 30"
-    
-    # Show container status
+    - echo "Show container status"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "docker ps"
-    
-    # Verify deployment health
     - echo "Verifying deployment status"
     - sleep 10
     - echo "Testing Gateway health endpoint"
-    - curl -f http://$AZURE_VM_IP:8080/actuator/health || echo "Warning: Gateway health check failed (may still be starting)"
+    - curl -f http://$AZURE_VM_IP:8080/actuator/health || true
     - echo "Testing Keycloak availability"
-    - curl -f http://$AZURE_VM_IP:8180 || echo "Warning: Keycloak not yet ready (may still be starting)"
-    
+    - curl -f http://$AZURE_VM_IP:8180 || true
     - echo "Deployment verification completed"
-    - echo "Services are available at the following URLs:"
-    - echo "  Gateway API: http://$AZURE_VM_IP:8080"
-    - echo "  Keycloak Admin: http://$AZURE_VM_IP:8180"
-    - echo "  Eureka Dashboard: http://$AZURE_VM_IP:8761"
+    - echo "Services are available at Gateway API http://$AZURE_VM_IP:8080"
+    - echo "Keycloak Admin http://$AZURE_VM_IP:8180"
+    - echo "Eureka Dashboard http://$AZURE_VM_IP:8761"
     
   environment:
     name: production
