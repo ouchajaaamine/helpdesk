@@ -291,7 +291,7 @@ sonar-discovery-service:
     - build-discovery-service
   needs: ["build-discovery-service"]
   script:
-    - echo "🔍 Running SonarCloud analysis for discovery-service..."
+    - echo "Running SonarCloud analysis for discovery-service"
     - cd backend/discovery-service
     - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
       -Dsonar.projectKey=ouchajaaamine_helpdesk
@@ -312,7 +312,7 @@ sonar-gateway-service:
     - build-gateway-service
   needs: ["build-gateway-service"]
   script:
-    - echo "🔍 Running SonarCloud analysis for gateway-service..."
+    - echo "Running SonarCloud analysis for gateway-service"
     - cd backend/gateway-service
     - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
       -Dsonar.projectKey=ouchajaaamine_helpdesk
@@ -333,7 +333,7 @@ sonar-user-service:
     - build-user-service
   needs: ["build-user-service"]
   script:
-    - echo "🔍 Running SonarCloud analysis for user-service..."
+    - echo "Running SonarCloud analysis for user-service"
     - cd backend/user-service
     - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
       -Dsonar.projectKey=ouchajaaamine_helpdesk
@@ -354,7 +354,7 @@ sonar-ticket-service:
     - build-ticket-service
   needs: ["build-ticket-service"]
   script:
-    - echo "🔍 Running SonarCloud analysis for ticket-service..."
+    - echo "Running SonarCloud analysis for ticket-service"
     - cd backend/ticket-service
     - mvn $MAVEN_CLI_OPTS package sonar:sonar -DskipTests
       -Dsonar.projectKey=ouchajaaamine_helpdesk
@@ -626,4 +626,94 @@ docker_push-ticket-service:
   only:
     - main
     - develop
+
+# =====================================================
+# DEPLOYMENT STAGE - AZURE VM DEPLOYMENT
+# =====================================================
+
+# Deploy microservices to Azure VM using production docker-compose configuration
+# Pulls images from GitLab Registry and deploys via SSH to Azure VM
+deploy-to-azure-vm:
+  stage: deploy
+  image: alpine:latest
+  dependencies:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
+  needs:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
+  before_script:
+    # Install SSH client and other tools
+    - apk add --no-cache openssh-client curl
+    # Setup SSH key for Azure VM access
+    - eval $(ssh-agent -s)
+    - echo "$AZURE_VM_SSH_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $AZURE_VM_IP >> ~/.ssh/known_hosts
+  script:
+    - echo "Deploying helpdesk microservices to Azure VM at $AZURE_VM_IP"
+    
+    # Transfer production docker-compose file to VM
+    - echo "Transferring docker-compose.prod.yml to VM"
+    - scp docker-compose.prod.yml $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/
+    
+    # Transfer supporting files if they exist
+    - echo "Transferring deployment scripts and configuration"
+    - scp setup-keycloak-realm.sh $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ || echo "Warning: setup-keycloak-realm.sh not found, skipping"
+    - scp -r keycloak-import $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ 2>/dev/null || echo "Warning: keycloak-import directory not found, skipping"
+    
+    # Execute deployment commands on the Azure VM
+    - |
+      ssh $AZURE_VM_USER@$AZURE_VM_IP << 'EOF'
+      set -e
+      cd $DEPLOY_PATH
+      
+      echo "Logging into GitLab Container Registry"
+      echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+      
+      echo "Stopping existing services"
+      docker-compose -f docker-compose.prod.yml down || true
+      
+      echo "Cleaning up old images to free space"
+      docker image prune -f || true
+      
+      echo "Pulling latest images from GitLab Registry"
+      docker-compose -f docker-compose.prod.yml pull
+      
+      echo "Starting services with production configuration"
+      docker-compose -f docker-compose.prod.yml up -d
+      
+      echo "Waiting for services to initialize"
+      sleep 30
+      
+      echo "Deployment completed successfully"
+      echo "Container status:"
+      docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+      EOF
+    
+    # Verify deployment health
+    - echo "Verifying deployment status"
+    - sleep 10
+    - echo "Testing Gateway health endpoint"
+    - curl -f http://$AZURE_VM_IP:8080/actuator/health || echo "Warning: Gateway health check failed (may still be starting)"
+    - echo "Testing Keycloak availability"
+    - curl -f http://$AZURE_VM_IP:8180 || echo "Warning: Keycloak not yet ready (may still be starting)"
+    
+    - echo "Deployment verification completed"
+    - echo "Services are available at the following URLs:"
+    - echo "  Gateway API: http://$AZURE_VM_IP:8080"
+    - echo "  Keycloak Admin: http://$AZURE_VM_IP:8180"
+    - echo "  Eureka Dashboard: http://$AZURE_VM_IP:8761"
+    
+  environment:
+    name: production
+    url: http://$AZURE_VM_IP:8080
+  only:
+    - main
+  when: manual  # Require manual trigger for safety
 

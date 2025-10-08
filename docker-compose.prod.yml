@@ -1,0 +1,217 @@
+# =====================================================
+# PRODUCTION DOCKER COMPOSE FOR AZURE VM DEPLOYMENT
+# =====================================================
+# This version uses pre-built images from GitLab Registry
+# instead of building locally. Optimized for VM deployment.
+
+services:
+  # PostgreSQL Database for User Service
+  postgres-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    networks:
+      - helpdesk-network
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+        reservations:
+          memory: 150M
+
+  # PostgreSQL Database for Ticket Service  
+  postgres-ticket:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ticketdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    networks:
+      - helpdesk-network
+    volumes:
+      - ticket_db_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+        reservations:
+          memory: 150M
+
+  # Keycloak Authentication Service
+  # Enhanced with persistent data and realm import
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+      KC_HOSTNAME: 4.233.111.97
+      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      # JVM optimization for 4GB VM
+      JAVA_OPTS: "-Xmx800m -Xms600m -XX:+UseG1GC"
+    ports:
+      - "8180:8080"
+    networks:
+      - helpdesk-network
+    volumes:
+      # Persistent data volume (most important for data retention)
+      - keycloak-data:/opt/keycloak/data
+      # Realm import from persistent volume (not local file system)
+      - keycloak-import:/opt/keycloak/data/import
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          memory: 900M
+        reservations:
+          memory: 700M
+
+  # Eureka Discovery Service - FROM GITLAB REGISTRY
+  discovery-service:
+    image: registry.gitlab.com/ouchajaaamine/helpdesk/discovery-service:latest
+    environment:
+      # JVM optimization for production
+      JAVA_OPTS: "-Xmx300m -Xms200m -XX:+UseG1GC"
+    ports:
+      - "8761:8761"
+    networks:
+      - helpdesk-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 350M
+        reservations:
+          memory: 250M
+
+  # API Gateway Service - FROM GITLAB REGISTRY
+  gateway-service:
+    image: registry.gitlab.com/ouchajaaamine/helpdesk/gateway-service:latest
+    environment:
+      # JVM optimization for production
+      JAVA_OPTS: "-Xmx350m -Xms250m -XX:+UseG1GC"
+    ports:
+      - "8080:8080"
+    networks:
+      - helpdesk-network
+    depends_on:
+      discovery-service:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+        reservations:
+          memory: 300M
+
+  # User Management Service - FROM GITLAB REGISTRY
+  user-service:
+    image: registry.gitlab.com/ouchajaaamine/helpdesk/user-service:latest
+    environment:
+      # JVM optimization for production
+      JAVA_OPTS: "-Xmx400m -Xms300m -XX:+UseG1GC"
+      # Database connection
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/userdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+    ports:
+      - "8081:8081"
+    networks:
+      - helpdesk-network
+    depends_on:
+      postgres-db:
+        condition: service_started
+      discovery-service:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 450M
+        reservations:
+          memory: 350M
+
+  # Ticket Management Service - FROM GITLAB REGISTRY
+  ticket-service:
+    image: registry.gitlab.com/ouchajaaamine/helpdesk/ticket-service:latest
+    environment:
+      # JVM optimization for production
+      JAVA_OPTS: "-Xmx400m -Xms300m -XX:+UseG1GC"
+      # Database connection
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-ticket:5432/ticketdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+    ports:
+      - "8082:8082"
+    networks:
+      - helpdesk-network
+    depends_on:
+      postgres-ticket:
+        condition: service_started
+      discovery-service:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 450M
+        reservations:
+          memory: 350M
+
+networks:
+  helpdesk-network:
+    driver: bridge
+
+volumes:
+  # PostgreSQL data volumes (persistent)
+  user_db_data:
+    driver: local
+  ticket_db_data:
+    driver: local
+  
+  # Keycloak data volumes (persistent)
+  keycloak-data:
+    driver: local
+  
+  # Keycloak realm import volume (for initial realm setup)
+  # This will be populated during first deployment
+  keycloak-import:
+    driver: local
