@@ -22,9 +22,10 @@ deploy-to-azure-vm:
     # Create SSH key file with proper permissions
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
-    - echo "$AZURE_VM_SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    # Decode base64 SSH key and save to file
+    - echo "$AZURE_VM_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    # Debug: Check if key file is created and has content
+    # Debug: Check if key file is created and has proper format
     - ls -la ~/.ssh/id_rsa
     - head -n 1 ~/.ssh/id_rsa
     # Add key to agent
