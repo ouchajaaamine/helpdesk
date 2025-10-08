@@ -668,33 +668,29 @@ deploy-to-azure-vm:
     - scp -r keycloak-import $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ 2>/dev/null || echo "Warning: keycloak-import directory not found, skipping"
     
     # Execute deployment commands on the Azure VM
-    - |
-      ssh $AZURE_VM_USER@$AZURE_VM_IP << 'EOF'
-      set -e
-      cd $DEPLOY_PATH
-      
-      echo "Logging into GitLab Container Registry"
-      echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
-      
-      echo "Stopping existing services"
-      docker-compose -f docker-compose.prod.yml down || true
-      
-      echo "Cleaning up old images to free space"
-      docker image prune -f || true
-      
-      echo "Pulling latest images from GitLab Registry"
-      docker-compose -f docker-compose.prod.yml pull
-      
-      echo "Starting services with production configuration"
-      docker-compose -f docker-compose.prod.yml up -d
-      
-      echo "Waiting for services to initialize"
-      sleep 30
-      
-      echo "Deployment completed successfully"
-      echo "Container status:"
-      docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-      EOF
+    - echo "Connecting to VM and executing deployment commands"
+    - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && echo 'Starting deployment process'"
+    
+    # Login to GitLab Registry on VM
+    - ssh $AZURE_VM_USER@$AZURE_VM_IP "echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY"
+    
+    # Stop existing services
+    - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml down || true"
+    
+    # Clean up old images
+    - ssh $AZURE_VM_USER@$AZURE_VM_IP "docker image prune -f || true"
+    
+    # Pull latest images
+    - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml pull"
+    
+    # Start services
+    - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml up -d"
+    
+    # Wait for services to start
+    - ssh $AZURE_VM_USER@$AZURE_VM_IP "sleep 30"
+    
+    # Show container status
+    - ssh $AZURE_VM_USER@$AZURE_VM_IP "docker ps"
     
     # Verify deployment health
     - echo "Verifying deployment status"
