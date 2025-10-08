@@ -696,3 +696,5 @@ deploy-to-azure-vm:
     - main
   when: manual  # Require manual trigger for safety
 
+  
+
