@@ -17,47 +17,46 @@ deploy-to-azure-vm:
   before_script:
     # Install SSH client and other tools
     - apk add --no-cache openssh-client curl
-    # Setup SSH key for Azure VM access
-    - eval $(ssh-agent -s)
-    # Create SSH key file with proper permissions
+    # Setup SSH directory
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
-    # Try multiple methods to handle SSH key format
-    - |
-      if echo "$AZURE_VM_SSH_KEY" | grep -q "BEGIN"; then
-        echo "Key appears to be in OpenSSH format"
-        printf "%s\n" "$AZURE_VM_SSH_KEY" > ~/.ssh/id_rsa
-      else
-        echo "Key appears to be base64 encoded, decoding..."
-        echo "$AZURE_VM_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
-      fi
+    # Clean and decode SSH key (remove spaces, newlines, carriage returns)
+    - echo "$AZURE_VM_SSH_KEY" | tr -d ' \n\r\t' | base64 -d > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    # Debug: Check key format
-    - ls -la ~/.ssh/id_rsa
-    - echo "Key header check:"
-    - head -n 1 ~/.ssh/id_rsa | cut -c1-30
-    # Validate key format before adding to agent
-    - ssh-keygen -l -f ~/.ssh/id_rsa || echo "Key validation failed, but continuing..."
-    # Add key to agent
-    - ssh-add ~/.ssh/id_rsa
-    - ssh-keyscan -H $AZURE_VM_IP >> ~/.ssh/known_hosts
+    # Debug: Check key file
+    - ls -lh ~/.ssh/id_rsa
+    - echo "First bytes of key file:"
+    - xxd -l 32 ~/.ssh/id_rsa || head -c 32 ~/.ssh/id_rsa | od -A x -t x1z -v
+    # Add host to known_hosts (disable host key checking for simplicity)
+    - mkdir -p ~/.ssh
+    - echo "StrictHostKeyChecking no" > ~/.ssh/config
+    - echo "UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+    # Test SSH connection (using key file directly without ssh-agent)
+    - echo "Testing SSH connection to $AZURE_VM_USER@$AZURE_VM_IP..."
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "echo 'SSH connection successful!' && whoami"
   script:
-    - echo "Testing deployment to Azure VM at $AZURE_VM_IP"
+    - echo "Deploying helpdesk microservices to Azure VM at $AZURE_VM_IP"
     - echo "Transferring docker-compose.prod.yml to VM"
-    - scp docker-compose.prod.yml $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/
+    - scp -i ~/.ssh/id_rsa docker-compose.prod.yml $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/
     - echo "Transferring deployment scripts and configuration"
-    - scp setup-keycloak-realm.sh $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ || true
-    - scp -r keycloak-import $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ || true
+    - scp -i ~/.ssh/id_rsa setup-keycloak-realm.sh $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ || true
+    - scp -i ~/.ssh/id_rsa -r keycloak-import $AZURE_VM_USER@$AZURE_VM_IP:$DEPLOY_PATH/ || true
     - echo "Connecting to VM and executing deployment commands"
-    - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && echo 'Starting deployment process'"
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && echo 'Starting deployment process'"
     - echo "Login to GitLab Registry on VM"
-    - ssh $AZURE_VM_USER@$AZURE_VM_IP "echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY"
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY"
     - echo "Stop existing services"
-    - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml down || true"
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml down || true"
     - echo "Clean up old images"
-    - ssh $AZURE_VM_USER@$AZURE_VM_IP "docker image prune -f || true"
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "docker image prune -f || true"
     - echo "Pull latest images"
-    - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml pull"
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml pull"
+    - echo "Start services"
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml up -d"
+    - echo "Wait for services to start"
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "sleep 30"
+    - echo "Show container status"
+    - ssh -i ~/.ssh/id_rsa $AZURE_VM_USER@$AZURE_VM_IP "docker ps"
     - echo "Start services"
     - ssh $AZURE_VM_USER@$AZURE_VM_IP "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml up -d"
     - echo "Wait for services to start"
