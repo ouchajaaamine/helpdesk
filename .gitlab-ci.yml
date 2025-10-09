@@ -91,6 +91,7 @@ docker_build-discovery-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Job to build the gateway-service.
 build-gateway-service:
@@ -150,6 +151,7 @@ docker_build-gateway-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== USER SERVICE PIPELINE =====
 
@@ -215,6 +217,7 @@ docker_build-user-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== TICKET SERVICE PIPELINE =====
 
@@ -280,6 +283,7 @@ docker_build-ticket-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== SONARCLOUD CODE QUALITY ANALYSIS =====
 
@@ -303,6 +307,7 @@ sonar-discovery-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Analyze gateway-service code quality
 sonar-gateway-service:
@@ -324,6 +329,7 @@ sonar-gateway-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Analyze user-service code quality
 sonar-user-service:
@@ -345,6 +351,7 @@ sonar-user-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Analyze ticket-service code quality
 sonar-ticket-service:
@@ -366,6 +373,7 @@ sonar-ticket-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== TRIVY SECURITY SCANNING STAGE =====
 
@@ -406,6 +414,7 @@ trivy-discovery-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Security scan gateway-service Docker image  
 trivy-gateway-service:
@@ -444,6 +453,7 @@ trivy-gateway-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Security scan user-service Docker image
 trivy-user-service:
@@ -482,6 +492,7 @@ trivy-user-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Security scan ticket-service Docker image
 trivy-ticket-service:
@@ -520,6 +531,7 @@ trivy-ticket-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== DOCKER PUSH STAGE (ONLY AFTER SECURITY SCAN) =====
 
@@ -548,6 +560,7 @@ docker_push-discovery-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Push gateway-service Docker image (AFTER security scan)
 docker_push-gateway-service:
@@ -574,6 +587,7 @@ docker_push-gateway-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Push user-service Docker image (AFTER security scan)
 docker_push-user-service:
@@ -600,6 +614,7 @@ docker_push-user-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Push ticket-service Docker image (AFTER security scan)
 docker_push-ticket-service:
@@ -626,6 +641,7 @@ docker_push-ticket-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # =====================================================
 # DEPLOYMENT STAGE - AZURE VM DEPLOYMENT
@@ -818,3 +834,5 @@ deploy-to-k8s-local:
   only:
     - k8s-local
   when: manual  # Require manual trigger for safety
+
+
