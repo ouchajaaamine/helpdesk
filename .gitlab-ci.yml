@@ -23,14 +23,11 @@ test-deploy-to-k8s:
     - chmod 600 ~/.kube/config
   script:
     - echo "Testing cluster connection..."
-    - kubectl cluster-info || echo "Cannot connect (expected for local Minikube)"
-    - kubectl get nodes || echo "Cannot get nodes"
-    - echo ""
-    - echo "Kubernetes manifests:"
+    - kubectl cluster-info || true
+    - kubectl get nodes || true
+    - echo "Kubernetes manifests available:"
     - ls -la kubernetes/
-    - echo ""
-    - echo "If cluster was accessible, would deploy 7 services"
-    - echo "Use .\deploy-k8s-local.ps1 to deploy locally"
+    - echo "To deploy locally run - deploy-k8s-local.ps1"
   environment:
     name: k8s-local-test
   only:
