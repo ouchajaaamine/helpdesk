@@ -1,0 +1,57 @@
+# Eureka Discovery Service - Service Registry for microservices
+# This replaces the discovery-service from docker-compose.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-service
+  labels:
+    app: discovery-service
+spec:
+  replicas: 1  # Run 1 instance (can scale up later)
+  selector:
+    matchLabels:
+      app: discovery-service  # Find pods with this label
+  template:
+    metadata:
+      labels:
+        app: discovery-service  # Label applied to pods
+    spec:
+      # Image pull secret for GitLab Registry authentication
+      imagePullSecrets:
+      - name: gitlab-registry-secret  # Secret containing GitLab credentials
+      containers:
+      - name: discovery-service
+        image: registry.gitlab.com/ouchajaaamine/helpdesk/discovery-service:latest  # GitLab Registry image
+        ports:
+        - containerPort: 8761  # Eureka default port
+        imagePullPolicy: Always  # Always pull from GitLab Registry
+        # Health check: Is service ready to receive traffic?
+        # readinessProbe:
+        #   httpGet:
+        #     path: /actuator/health
+        #     port: 8761
+        #   initialDelaySeconds: 30  # Wait 30s before first check
+        #   periodSeconds: 10        # Check every 10s
+        # Health check: Is service still alive?
+        # livenessProbe:
+        #   httpGet:
+        #     path: /actuator/health
+        #     port: 8761
+        #   initialDelaySeconds: 60  # Wait 60s before first check
+        #   periodSeconds: 30        # Check every 30s
+---
+# Service: Makes discovery-service accessible via DNS name
+# Other services can reach it at: http://discovery-service:8761
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-service  # DNS name within cluster
+spec:
+  selector:
+    app: discovery-service  # Route traffic to pods with this label
+  ports:
+  - protocol: TCP
+    port: 8761        # Port exposed to other services
+    targetPort: 8761  # Port on the container
+    nodePort: 30761   # External port for accessing Eureka dashboard
+  type: NodePort     # External access (was ClusterIP)

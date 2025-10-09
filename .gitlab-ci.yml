@@ -721,3 +721,100 @@ deploy-to-azure-vm:
     - main
   when: manual  # Require manual trigger for safety
 
+# =====================================================
+# KUBERNETES DEPLOYMENT STAGE - LOCAL K8S CLUSTER
+# =====================================================
+
+# Deploy microservices to local Kubernetes cluster (Minikube/Kind)
+# This job is triggered only for k8s-local branch
+deploy-to-k8s-local:
+  stage: deploy
+  image: 
+    name: bitnami/kubectl:latest
+    entrypoint: ['']
+  dependencies:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
+  needs:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
+  before_script:
+    # Verify kubectl is available
+    - kubectl version --client
+    # Configure kubectl to connect to your local cluster
+    # Option 1: Using KUBECONFIG file stored in GitLab CI/CD variables
+    - mkdir -p ~/.kube
+    - echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+    # Verify connection to cluster
+    - echo "Testing connection to Kubernetes cluster..."
+    - kubectl cluster-info
+    - kubectl get nodes
+  script:
+    # Create GitLab Registry secret if it doesn't exist
+    - echo "Setting up GitLab Registry authentication in Kubernetes..."
+    - kubectl create secret docker-registry gitlab-registry-secret 
+        --docker-server=$CI_REGISTRY 
+        --docker-username=$CI_REGISTRY_USER 
+        --docker-password=$CI_REGISTRY_PASSWORD 
+        --docker-email=$GITLAB_USER_EMAIL 
+        --dry-run=client -o yaml | kubectl apply -f -
+    
+    # Deploy infrastructure services first (databases, discovery)
+    - echo "Deploying infrastructure services..."
+    - kubectl apply -f kubernetes/postgres-user-db.yaml
+    - kubectl apply -f kubernetes/postgres-ticket-db.yaml
+    - kubectl apply -f kubernetes/discovery-service.yaml
+    
+    # Wait for infrastructure to be ready
+    - echo "Waiting for infrastructure services to be ready..."
+    - kubectl wait --for=condition=ready pod -l app=postgres-user-db --timeout=120s || true
+    - kubectl wait --for=condition=ready pod -l app=postgres-ticket-db --timeout=120s || true
+    - kubectl wait --for=condition=ready pod -l app=discovery-service --timeout=120s || true
+    
+    # Deploy Keycloak
+    - echo "Deploying Keycloak authentication service..."
+    - kubectl apply -f kubernetes/keycloak.yaml
+    
+    # Deploy application services
+    - echo "Deploying application services..."
+    - kubectl apply -f kubernetes/gateway-service.yaml
+    - kubectl apply -f kubernetes/user-service.yaml
+    - kubectl apply -f kubernetes/ticket-service.yaml
+    
+    # Wait for application services to be ready
+    - echo "Waiting for application services to be ready..."
+    - sleep 30
+    - kubectl wait --for=condition=ready pod -l app=gateway-service --timeout=120s || true
+    - kubectl wait --for=condition=ready pod -l app=user-service --timeout=120s || true
+    - kubectl wait --for=condition=ready pod -l app=ticket-service --timeout=120s || true
+    
+    # Display deployment status
+    - echo "==================================="
+    - echo "Kubernetes Deployment Summary"
+    - echo "==================================="
+    - kubectl get deployments
+    - kubectl get pods
+    - kubectl get services
+    
+    # Get Minikube IP and service URLs
+    - echo "==================================="
+    - echo "Service Access URLs"
+    - echo "==================================="
+    - echo "Get your Minikube IP with - minikube ip"
+    - echo "Eureka Dashboard - http://MINIKUBE_IP:30761"
+    - echo "API Gateway - http://MINIKUBE_IP:30080"
+    - echo "Keycloak Admin - http://MINIKUBE_IP:30180"
+    - echo "User Service - http://MINIKUBE_IP:30081"
+    - echo "Ticket Service - http://MINIKUBE_IP:30082"
+    
+  environment:
+    name: k8s-local
+    url: http://localhost:30080
+  only:
+    - k8s-local
+  when: manual  # Require manual trigger for safety
