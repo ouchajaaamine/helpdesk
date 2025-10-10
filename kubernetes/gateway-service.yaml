@@ -58,6 +58,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: gateway-service  # DNS name within cluster
+  labels:
+    app: gateway-service  # Label for Prometheus service discovery
 spec:
   selector:
     app: gateway-service  # Route traffic to pods with this label

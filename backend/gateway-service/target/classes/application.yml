@@ -71,3 +71,17 @@ logging:
     '[org.springframework.cloud.gateway]': DEBUG
     '[org.springframework.cloud.loadbalancer]': DEBUG
     '[com.netflix.discovery]': DEBUG
+
+# Enable Prometheus metrics endpoint
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
