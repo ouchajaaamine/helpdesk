@@ -92,3 +92,17 @@ springdoc:
         path: /swagger-ui.html
         operationsSorter: method
         tagsSorter: alpha
+
+# Enable Prometheus metrics endpoint
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true

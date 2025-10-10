@@ -1,0 +1,71 @@
+# API Gateway Service - Routes requests to microservices
+# This replaces the gateway-service from docker-compose.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+  labels:
+    app: gateway-service
+spec:
+  replicas: 1  # Run 1 instance (can scale up later)
+  selector:
+    matchLabels:
+      app: gateway-service  # Find pods with this label
+  template:
+    metadata:
+      labels:
+        app: gateway-service  # Label applied to pods
+    spec:
+      # Image pull secret for GitLab Registry authentication
+      imagePullSecrets:
+      - name: gitlab-registry-secret  # Secret containing GitLab credentials
+      containers:
+      - name: gateway-service
+        image: registry.gitlab.com/ouchajaaamine/helpdesk/gateway-service:latest  # GitLab Registry image
+        ports:
+        - containerPort: 8080  # Gateway port
+        imagePullPolicy: Always  # Always pull from GitLab Registry
+        env:
+        # IMPORTANT: Service discovery URL using K8s DNS name!
+        # Old: http://172.20.0.10:8761/eureka/ (hardcoded IP)
+        # New: http://discovery-service:8761/eureka/ (DNS name)
+        - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+          value: "http://discovery-service:8761/eureka/"
+        # Health check: Is service ready to receive traffic?
+        # readinessProbe:
+        #   httpGet:
+        #     path: /actuator/health
+        #     port: 8080
+        #   initialDelaySeconds: 30  # Wait 30s before first check
+        #   periodSeconds: 10        # Check every 10s
+        # Health check: Is service still alive?
+        # livenessProbe:
+        #   httpGet:
+        #     path: /actuator/health
+        #     port: 8080
+        #   initialDelaySeconds: 60  # Wait 60s before first check
+        #   periodSeconds: 30        # Check every 30s
+      # Init container: Wait for discovery service before starting
+      # Replaces docker-compose depends_on functionality
+      initContainers:
+      - name: wait-for-discovery
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nslookup discovery-service; do echo waiting for discovery-service; sleep 2; done;']
+---
+# Service: Makes gateway accessible both internally and externally
+# External access: http://minikube-ip:30080
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service  # DNS name within cluster
+  labels:
+    app: gateway-service  # Label for Prometheus service discovery
+spec:
+  selector:
+    app: gateway-service  # Route traffic to pods with this label
+  ports:
+  - protocol: TCP
+    port: 8080        # Port exposed to other services
+    targetPort: 8080  # Port on the container
+    nodePort: 30080   # External port (accessible from outside cluster)
+  type: NodePort      # Expose externally (replaces ports: 8080:8080 from docker-compose)

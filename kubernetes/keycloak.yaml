@@ -1,0 +1,110 @@
+# Keycloak Authentication Service
+# This replaces keycloak from docker-compose.yml
+# Handles user authentication and authorization
+---
+# PersistentVolumeClaim for Keycloak data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce  # Single pod can read/write
+  resources:
+    requests:
+      storage: 1Gi   # 1GB storage for Keycloak data
+---
+# ConfigMap to store realm import data
+# This replaces the volume mount ./keycloak-import:/opt/keycloak/data/import
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-import-config
+data:
+  # You'll need to add your realm configuration here
+  # For now, we'll mount an empty directory and configure manually
+  .gitkeep: ""
+---
+# Deployment for Keycloak
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  replicas: 1  # Authentication service should have exactly 1 replica
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:latest  # Same as docker-compose
+        ports:
+        - containerPort: 8080  # Keycloak port
+        command: ["/opt/keycloak/bin/kc.sh", "start-dev", "--import-realm"]  # Updated command for new Keycloak
+        env:
+        # Admin credentials (same as docker-compose)
+        - name: KEYCLOAK_ADMIN
+          value: "admin"
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          value: "admin123"
+        # Hostname configuration
+        - name: KC_HOSTNAME
+          value: "localhost"
+        - name: KC_HTTP_PORT
+          value: "8080"
+        # Enable health and metrics
+        - name: KC_HEALTH_ENABLED
+          value: "true"
+        - name: KC_METRICS_ENABLED
+          value: "true"
+        # Mount volumes for data persistence and import
+        volumeMounts:
+        - name: keycloak-data
+          mountPath: /opt/keycloak/data
+        - name: keycloak-import
+          mountPath: /opt/keycloak/data/import
+        # Health check: Is Keycloak ready?
+        # readinessProbe:
+        #   httpGet:
+        #     path: /
+        #     port: 8080  # Main Keycloak port
+        #   initialDelaySeconds: 60  # Keycloak takes time to start
+        #   periodSeconds: 10
+        # Health check: Is Keycloak still running?
+        # livenessProbe:
+        #   httpGet:
+        #     path: /
+        #     port: 8080  # Main Keycloak port
+        #   initialDelaySeconds: 90  # Give more time for startup
+        #   periodSeconds: 30
+      volumes:
+      - name: keycloak-data
+        persistentVolumeClaim:
+          claimName: keycloak-data-pvc
+      - name: keycloak-import
+        configMap:
+          name: keycloak-import-config
+---
+# Service: Makes Keycloak accessible both internally and externally
+# Internal: http://keycloak:8080 (for microservices)
+# External: http://minikube-ip:30180 (for admin access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak  # DNS name within cluster
+spec:
+  selector:
+    app: keycloak
+  ports:
+  - protocol: TCP
+    port: 8080        # Port exposed to other services
+    targetPort: 8080  # Port on Keycloak container
+    nodePort: 30180   # External port (replaces 8180:8080 from docker-compose)
+  type: NodePort      # Expose externally for admin access

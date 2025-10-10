@@ -1,0 +1,109 @@
+# Ticket Management Service
+# This replaces ticket-service from docker-compose.yml
+# Handles ticket CRUD operations, assignments, and status updates
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-service
+  labels:
+    app: ticket-service
+spec:
+  replicas: 1  # Start with 1, can scale later
+  selector:
+    matchLabels:
+      app: ticket-service
+  template:
+    metadata:
+      labels:
+        app: ticket-service
+    spec:
+      # Image pull secret for GitLab Registry authentication
+      imagePullSecrets:
+      - name: gitlab-registry-secret  # Secret containing GitLab credentials
+      containers:
+      - name: ticket-service
+        image: registry.gitlab.com/ouchajaaamine/helpdesk/ticket-service:latest  # GitLab Registry image
+        ports:
+        - containerPort: 8082  # Ticket service port
+        imagePullPolicy: Always  # Always pull from GitLab Registry
+        env:
+        # DATABASE CONNECTION - Updated for Kubernetes DNS
+        # Old: jdbc:postgresql://postgres-ticket:5432/ticketdb
+        # New: jdbc:postgresql://postgres-ticket-db:5432/ticketdb
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres-ticket-db:5432/ticketdb"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "postgres"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "password"
+        
+        # EUREKA SERVICE DISCOVERY - Using DNS name
+        # Old: http://172.20.0.10:8761/eureka/
+        # New: http://discovery-service:8761/eureka/
+        - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+          value: "http://discovery-service:8761/eureka/"
+        
+        # KEYCLOAK AUTHENTICATION - Using DNS name
+        # For JWT token validation and user context
+        - name: KEYCLOAK_AUTH_SERVER_URL
+          value: "http://keycloak:8080"
+        
+        # SERVICE REGISTRATION - Tell Eureka our hostname
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: "ticket-service"
+        - name: SPRING_APPLICATION_NAME
+          value: "ticket-service"
+        
+        # INTER-SERVICE COMMUNICATION - User service integration
+        # Ticket service may need to call user service for user details
+        - name: USER_SERVICE_URL
+          value: "http://user-service:8081"
+        
+        # Health check: Is service ready to handle requests?
+        # readinessProbe:
+        #   httpGet:
+        #     path: /actuator/health
+        #     port: 8082
+        #   initialDelaySeconds: 45  # Spring Boot + DB connection takes time
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
+        
+        # Health check: Is service still alive?
+        # livenessProbe:
+        #   httpGet:
+        #     path: /actuator/health
+        #     port: 8082
+        #   initialDelaySeconds: 60  # Give more time for full startup
+        #   periodSeconds: 30
+        #   timeoutSeconds: 10
+      
+      # Init containers: Wait for all dependencies before starting
+      # This replaces docker-compose depends_on functionality
+      initContainers:
+      # Wait for PostgreSQL database to be ready
+      - name: wait-for-postgres
+        image: postgres:15
+        command: ['sh', '-c', 'until pg_isready -h postgres-ticket-db -p 5432 -U postgres; do echo waiting for postgres-ticket-db; sleep 2; done;']
+      
+      # Wait for Eureka Discovery Service to be ready
+      - name: wait-for-discovery
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nslookup discovery-service; do echo waiting for discovery-service; sleep 2; done;']
+---
+# Service: Makes ticket-service accessible internally and externally
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-service  # DNS name within cluster
+  labels:
+    app: ticket-service  # Label for Prometheus service discovery
+spec:
+  selector:
+    app: ticket-service
+  ports:
+  - protocol: TCP
+    port: 8082        # Port exposed to other services
+    targetPort: 8082  # Port on ticket-service container
+    nodePort: 30082   # External port (replaces 8082:8082 from docker-compose)
+  type: NodePort      # Expose externally for testing

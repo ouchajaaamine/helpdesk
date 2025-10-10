@@ -75,6 +75,12 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Prometheus metrics for monitoring -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <!-- 🔐 KEYCLOAK INTEGRATION DEPENDENCIES -->
         <!-- Spring Security for OAuth2 Resource Server -->
         <dependency>

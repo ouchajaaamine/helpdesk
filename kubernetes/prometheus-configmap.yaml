@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    # Global configuration for Prometheus
+    global:
+      scrape_interval: 15s      # Scrape metrics every 15 seconds
+      evaluation_interval: 15s  # Evaluate alerting rules every 15 seconds
+      external_labels:
+        cluster: 'helpdesk-minikube'
+        environment: 'local'
+
+    # Alerting configuration (we'll add rules later)
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: []
+
+    # Rule files for alerting (empty for now)
+    rule_files:
+      # - "first_rules.yml"
+      # - "second_rules.yml"
+
+    # Scrape configuration - this is where the magic happens!
+    scrape_configs:
+      # Job 1: Monitor Prometheus itself
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+        metrics_path: /metrics
+        scrape_interval: 15s
+
+      # Job 2: Monitor Spring Boot Discovery Service (FIXED - proper metrics)
+      - job_name: 'discovery-service'
+        static_configs:
+          - targets: ['discovery-service:8761']
+        metrics_path: /actuator/prometheus
+        scrape_interval: 15s
+
+      # Job 3: Monitor Spring Boot Gateway Service (FIXED - proper metrics)
+      - job_name: 'gateway-service'
+        static_configs:
+          - targets: ['gateway-service:8080']
+        metrics_path: /actuator/prometheus
+        scrape_interval: 15s
+
+      # Job 4: Monitor Spring Boot User Service (FIXED - proper metrics)
+      - job_name: 'user-service'
+        static_configs:
+          - targets: ['user-service:8081']
+        metrics_path: /actuator/prometheus
+        scrape_interval: 15s
+
+      # Job 5: Monitor Spring Boot Ticket Service (FIXED - proper metrics)
+      - job_name: 'ticket-service'
+        static_configs:
+          - targets: ['ticket-service:8082']
+        metrics_path: /actuator/prometheus
+        scrape_interval: 15s

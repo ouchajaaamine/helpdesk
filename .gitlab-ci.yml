@@ -91,6 +91,7 @@ docker_build-discovery-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Job to build the gateway-service.
 build-gateway-service:
@@ -150,6 +151,7 @@ docker_build-gateway-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== USER SERVICE PIPELINE =====
 
@@ -215,6 +217,7 @@ docker_build-user-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== TICKET SERVICE PIPELINE =====
 
@@ -280,6 +283,7 @@ docker_build-ticket-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== SONARCLOUD CODE QUALITY ANALYSIS =====
 
@@ -303,6 +307,7 @@ sonar-discovery-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Analyze gateway-service code quality
 sonar-gateway-service:
@@ -324,6 +329,7 @@ sonar-gateway-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Analyze user-service code quality
 sonar-user-service:
@@ -345,6 +351,7 @@ sonar-user-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Analyze ticket-service code quality
 sonar-ticket-service:
@@ -366,6 +373,7 @@ sonar-ticket-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== TRIVY SECURITY SCANNING STAGE =====
 
@@ -406,6 +414,7 @@ trivy-discovery-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Security scan gateway-service Docker image  
 trivy-gateway-service:
@@ -444,6 +453,7 @@ trivy-gateway-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Security scan user-service Docker image
 trivy-user-service:
@@ -482,6 +492,7 @@ trivy-user-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Security scan ticket-service Docker image
 trivy-ticket-service:
@@ -520,6 +531,7 @@ trivy-ticket-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # ===== DOCKER PUSH STAGE (ONLY AFTER SECURITY SCAN) =====
 
@@ -548,6 +560,7 @@ docker_push-discovery-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Push gateway-service Docker image (AFTER security scan)
 docker_push-gateway-service:
@@ -574,6 +587,7 @@ docker_push-gateway-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Push user-service Docker image (AFTER security scan)
 docker_push-user-service:
@@ -600,6 +614,7 @@ docker_push-user-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # Push ticket-service Docker image (AFTER security scan)
 docker_push-ticket-service:
@@ -626,6 +641,7 @@ docker_push-ticket-service:
   only:
     - main
     - develop
+    - k8s-local
 
 # =====================================================
 # DEPLOYMENT STAGE - AZURE VM DEPLOYMENT
@@ -720,4 +736,176 @@ deploy-to-azure-vm:
   only:
     - main
   when: manual  # Require manual trigger for safety
+
+# =====================================================
+# KUBERNETES DEPLOYMENT STAGE - LOCAL K8S CLUSTER
+# =====================================================
+
+# Deploy to Kubernetes (works with proper entrypoint)
+deploy-to-k8s-local:
+  stage: deploy
+  image: 
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  dependencies:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
+  needs:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
+  before_script:
+    - echo "=== KUBERNETES DEPLOYMENT ==="
+    - kubectl version --client
+    - mkdir -p ~/.kube
+    - echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config || echo "No KUBE_CONFIG variable set"
+    - chmod 600 ~/.kube/config 2>/dev/null || true
+  script:
+    - echo "Testing cluster connection..."
+    - kubectl cluster-info || echo "Cannot connect to cluster (expected for local Minikube)"
+    - kubectl get nodes || echo "Cannot get nodes"
+    - echo ""
+    - echo "Kubernetes manifests available:"
+    - ls -la kubernetes/ || echo "No kubernetes directory"
+    - echo ""
+    - |
+      if kubectl get nodes > /dev/null 2>&1; then
+        echo "Cluster is accessible! Proceeding with deployment..."
+        
+        # Create GitLab Registry secret
+        kubectl create secret docker-registry gitlab-registry-secret \
+          --docker-server=$CI_REGISTRY \
+          --docker-username=$CI_REGISTRY_USER \
+          --docker-password=$CI_REGISTRY_PASSWORD \
+          --docker-email=$GITLAB_USER_EMAIL \
+          --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Deploy services in order
+        kubectl apply -f kubernetes/postgres-user-db.yaml
+        kubectl apply -f kubernetes/postgres-ticket-db.yaml
+        kubectl apply -f kubernetes/discovery-service.yaml
+        sleep 30
+        kubectl apply -f kubernetes/keycloak.yaml
+        kubectl apply -f kubernetes/gateway-service.yaml
+        kubectl apply -f kubernetes/user-service.yaml
+        kubectl apply -f kubernetes/ticket-service.yaml
+        
+        echo "Deployment completed! Check status:"
+        kubectl get pods
+        kubectl get services
+      else
+        echo "Cluster not accessible from GitLab runner."
+        echo "To deploy locally, run: ./deploy-k8s-local.ps1"
+      fi
+  environment:
+    name: k8s-local
+    url: http://localhost:30080
+  only:
+    - k8s-local
+  when: manual
+  allow_failure: true
+
+# =====================================================
+# MONITORING DEPLOYMENT - PROMETHEUS & GRAFANA
+# =====================================================
+
+# Deploy Prometheus and Grafana monitoring stack to Kubernetes
+deploy-monitoring-k8s:
+  stage: deploy
+  image: 
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  dependencies:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
+  needs:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
+    - deploy-to-k8s-local  # Deploy monitoring after main services
+  before_script:
+    - echo "=== MONITORING STACK DEPLOYMENT ==="
+    - kubectl version --client
+    - mkdir -p ~/.kube
+    - echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config || echo "No KUBE_CONFIG variable set"
+    - chmod 600 ~/.kube/config 2>/dev/null || true
+  script:
+    - echo "Testing cluster connection for monitoring deployment..."
+    - kubectl cluster-info || echo "Cannot connect to cluster (expected for local Minikube)"
+    - echo ""
+    - |
+      if kubectl get nodes > /dev/null 2>&1; then
+        echo "Cluster is accessible! Deploying monitoring stack..."
+        
+        # Wait for main services to be ready
+        echo "Waiting for main services to be ready..."
+        kubectl wait --for=condition=ready pod -l app=discovery-service --timeout=120s || true
+        kubectl wait --for=condition=ready pod -l app=gateway-service --timeout=120s || true
+        kubectl wait --for=condition=ready pod -l app=user-service --timeout=120s || true
+        kubectl wait --for=condition=ready pod -l app=ticket-service --timeout=120s || true
+        
+        # Deploy Prometheus RBAC and configuration
+        echo "Deploying Prometheus RBAC and configuration..."
+        kubectl apply -f kubernetes/prometheus-rbac.yaml
+        kubectl apply -f kubernetes/prometheus-configmap.yaml
+        
+        # Deploy Prometheus server
+        echo "Deploying Prometheus server..."
+        kubectl apply -f kubernetes/prometheus-deployment.yaml
+        
+        # Wait for Prometheus to be ready
+        echo "Waiting for Prometheus to be ready..."
+        kubectl wait --for=condition=ready pod -l app=prometheus --timeout=180s || true
+        
+        # Deploy Grafana configuration and server
+        echo "Deploying Grafana with Prometheus data source..."
+        kubectl apply -f kubernetes/grafana-configmap.yaml
+        kubectl apply -f kubernetes/grafana-deployment.yaml
+        
+        # Wait for Grafana to be ready
+        echo "Waiting for Grafana to be ready..."
+        kubectl wait --for=condition=ready pod -l app=grafana --timeout=180s || true
+        
+        # Show monitoring stack status
+        echo ""
+        echo "=== MONITORING STACK STATUS ==="
+        kubectl get pods -l 'app in (prometheus,grafana)'
+        kubectl get services -l 'app in (prometheus,grafana)'
+        echo ""
+        
+        # Get service URLs
+        PROMETHEUS_PORT=$(kubectl get service prometheus-service -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30090")
+        GRAFANA_PORT=$(kubectl get service grafana-service -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30300")
+        
+        echo "=== MONITORING ACCESS URLS ==="
+        echo "Prometheus: http://localhost:$PROMETHEUS_PORT"
+        echo "Grafana: http://localhost:$GRAFANA_PORT (admin/admin123)"
+        echo ""
+        
+        # Verify Prometheus targets
+        echo "=== PROMETHEUS TARGETS CHECK ==="
+        kubectl exec -l app=prometheus -- wget -qO- http://localhost:9090/api/v1/targets | grep -o '"health":"[^"]*"' | sort | uniq -c || echo "Could not check Prometheus targets"
+        
+        echo ""
+        echo "Monitoring stack deployment completed successfully!"
+        echo "Access Grafana at http://localhost:$GRAFANA_PORT to create dashboards"
+        
+      else
+        echo "Cluster not accessible from GitLab runner."
+        echo "To deploy monitoring locally, run: kubectl apply -f kubernetes/prometheus-*.yaml && kubectl apply -f kubernetes/grafana-*.yaml"
+      fi
+  environment:
+    name: k8s-monitoring
+    url: http://localhost:30300
+  only:
+    - k8s-local
+    - monitoring  # Also trigger on monitoring branch
+  when: manual
+  allow_failure: true
 
