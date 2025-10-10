@@ -824,6 +824,10 @@ deploy-monitoring-k8s:
     - docker_push-user-service
     - docker_push-ticket-service
   needs:
+    - docker_push-discovery-service
+    - docker_push-gateway-service
+    - docker_push-user-service
+    - docker_push-ticket-service
     - deploy-to-k8s-local  # Deploy monitoring after main services
   before_script:
     - echo "=== MONITORING STACK DEPLOYMENT ==="
