@@ -1,238 +1,296 @@
-# 🎯 Enterprise Helpdesk System - Full DevSecOps Implementation
+<div align="center">
 
-[![Enterprise Architecture](https://img.shields.io/badge/Architecture-Microservices-blue)](https://gitlab.com/ouchajaaamine/helpdesk)
-[![DevSecOps](https://img.shields.io/badge/DevSecOps-Complete-green)](https://gitlab.com/ouchajaaamine/helpdesk)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Production--Ready-326CE5)](https://gitlab.com/ouchajaaamine/helpdesk)
-[![Monitoring](https://img.shields.io/badge/Monitoring-Prometheus%2BGrafana-orange)](https://gitlab.com/ouchajaaamine/helpdesk)
-[![Security](https://img.shields.io/badge/Security-Trivy%2BSonarQube-red)](https://gitlab.com/ouchajaaamine/helpdesk)
+# 🎫 HelpDesk — Cloud-Native IT Ticketing Platform
 
-> **A production-grade enterprise helpdesk system showcasing modern DevSecOps practices, microservices architecture, and complete infrastructure automation with Terraform.**
+**Spring Boot microservices · Keycloak SSO · Kubernetes · Terraform on Azure · GitLab DevSecOps pipeline**
 
-## 🚀 **Project Overview**
+[![Java](https://img.shields.io/badge/Java-17_%7C_21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](#-tech-stack)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](#-tech-stack)
+[![Spring Cloud](https://img.shields.io/badge/Spring_Cloud-Eureka_%7C_Gateway-6DB33F?style=for-the-badge&logo=spring&logoColor=white)](#-architecture)
+[![Keycloak](https://img.shields.io/badge/Keycloak-SSO-4D4D4D?style=for-the-badge&logo=keycloak&logoColor=white)](#-security)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](#-tech-stack)
+<br/>
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#-run-it-locally)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)](#-kubernetes)
+[![Terraform](https://img.shields.io/badge/Terraform-Azure-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)](#-infrastructure-as-code)
+[![GitLab CI](https://img.shields.io/badge/GitLab_CI-DevSecOps-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white)](#-cicd-pipeline)
+[![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](#-observability)
+[![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)](#-observability)
 
-This enterprise-grade helpdesk system demonstrates professional software engineering practices with a complete **DevSecOps pipeline**, **cloud-native architecture**, and **infrastructure automation**. Built as a showcase of modern enterprise development patterns suitable for large-scale production environments.
+[Architecture](#-architecture) • [Features](#-features) • [CI/CD](#-cicd-pipeline) • [Screenshots](#-screenshots) • [Run it](#-run-it-locally) • [API](#-api-overview)
 
-### 🎨 **System Architecture**
-
-![Architecture Overview](gitlab-pipeline.eraser)
-
-## 🏗️ **Technical Architecture**
-
-### **Core Technologies**
-- **Backend**: Spring Boot 3.x, Java 21, Maven
-- **Microservices**: Service Discovery (Eureka), API Gateway, Circuit Breakers  
-- **Security**: Keycloak SSO, OAuth2/OIDC, Spring Security
-- **Databases**: PostgreSQL with separate schemas per service
-- **Containerization**: Docker, Multi-stage builds, Distroless images
-
-### **Infrastructure & DevOps**
-- **Orchestration**: Kubernetes (Minikube local, AKS production)
-- **Cloud**: Microsoft Azure with Terraform automation
-- **CI/CD**: GitLab with 6-stage pipeline (Build → Test → Security → Deploy)
-- **Monitoring**: Prometheus metrics, Grafana dashboards, Spring Actuator
-- **Security**: Trivy vulnerability scanning, SonarQube quality gates
+</div>
 
 ---
 
-## 🎯 **Key Features & Capabilities**
+## 💡 What is it?
 
-### **🔄 Complete DevSecOps Pipeline**
-```yaml
-Pipeline Stages:
-├── 🔨 Build      → Maven compilation, JAR artifacts
-├── 🧪 Test       → JUnit 5, SonarQube quality analysis  
-├── 🐳 Docker     → Multi-stage container builds
-├── 🛡️ Security   → Trivy CVE scanning, security gates
-├── 📤 Registry   → GitLab secure image storage
-└── 🚀 Deploy     → Multi-environment automation
+An internal **IT support platform**: employees open tickets, technicians handle them, admins manage users and follow service levels.
+
+I built it end to end, from the code to production, to practise what a real team ships:
+
+- 4 **Spring Boot microservices** behind an **API Gateway**, with **Eureka** service discovery;
+- **Keycloak** single sign-on and role-based access control;
+- a **GitLab CI/CD pipeline** that builds, tests, analyses with **SonarQube**, scans images with **Trivy**, then deploys;
+- **Kubernetes** manifests, **Terraform** for the Azure infrastructure, and a **Prometheus + Grafana** monitoring stack.
+
+<div align="center">
+
+| 4 | 39 | 6 | 9 | Quality Gate |
+|:---:|:---:|:---:|:---:|:---:|
+| microservices | REST endpoints | pipeline stages | Kubernetes deployments | **Passed** on SonarQube |
+
+</div>
+
+---
+
+## 🏗 Architecture
+
+```mermaid
+flowchart LR
+    client([👤 Web / API client])
+
+    subgraph auth [Identity]
+        kc[🔐 Keycloak<br/>SSO · JWT · roles]
+    end
+
+    subgraph platform [Spring Cloud platform]
+        gw[🚪 API Gateway<br/>Spring Cloud Gateway]
+        eureka[🧭 Discovery Service<br/>Eureka registry]
+        us[👥 User Service]
+        ts[🎫 Ticket Service]
+    end
+
+    subgraph data [Data]
+        udb[(🐘 PostgreSQL<br/>users)]
+        tdb[(🐘 PostgreSQL<br/>tickets)]
+    end
+
+    subgraph obs [Observability]
+        prom[📈 Prometheus]
+        graf[📊 Grafana]
+    end
+
+    client -->|HTTPS + JWT| gw
+    client -. login .-> kc
+    gw --> us
+    gw --> ts
+    us <-->|Admin API| kc
+    ts -->|REST| us
+    us --> udb
+    ts --> tdb
+    us & ts & gw -. register .-> eureka
+    prom -. scrape /actuator/prometheus .-> platform
+    graf --> prom
 ```
 
-### **🏢 Enterprise Microservices**
-- **Discovery Service** - Eureka service registry with health checks
-- **Gateway Service** - API Gateway with load balancing & circuit breakers
-- **User Service** - User management with authentication integration
-- **Ticket Service** - Core business logic with async processing
-
-### **☁️ Infrastructure Automation**
-- **Terraform Azure** - Complete infrastructure provisioning
-- **Kubernetes Manifests** - Production-ready deployments
-- **Monitoring Stack** - Prometheus + Grafana automation
-- **Security Integration** - RBAC, network policies, secrets management
+- **Database per service**: users and tickets live in two separate PostgreSQL instances.
+- **Single entry point**: the gateway routes `/api/users/**`, `/api/admin/**` and `/api/tickets/**`, and aggregates the OpenAPI docs of every service.
+- **Stateless security**: each service validates Keycloak JWTs as an OAuth2 resource server.
 
 ---
 
-## 📊 **Development & Production Environments**
+## ✨ Features
 
-### **🖥️ Development Environment (Kubernetes)**
-```bash
-Services Access:
-├── API Gateway     → http://localhost:30080
-├── Keycloak Admin  → http://localhost:30180  
-├── Eureka Console  → http://localhost:30761
-├── Prometheus      → http://localhost:30090
-└── Grafana        → http://localhost:30300
+### 🎫 Ticket management
+- Full lifecycle: `OPEN → IN_PROGRESS → PENDING → RESOLVED → CLOSED`
+- 4 priorities (`LOW`, `MEDIUM`, `HIGH`, `URGENT`) and 6 categories (hardware, software, network, access, security, other)
+- **Automatic SLA deadlines** based on priority, plus an **overdue** view:
+
+  | Priority | SLA |
+  |---|---|
+  | 🔴 URGENT | 4 hours |
+  | 🟠 HIGH | 24 hours |
+  | 🟡 MEDIUM | 3 days |
+  | 🟢 LOW | 7 days |
+
+- Assignment to technicians, unassigned and open queues, full-text search
+- **Audit trail**: every change on a ticket is recorded and can be replayed as a history
+- **File attachments** with size and file-type validation
+- Statistics endpoints for dashboards
+
+### 👥 Users & access
+- Self sign-up → **admin approval workflow** (`PENDING → ACTIVE`, or `REJECTED`)
+- Accounts are provisioned and enabled in **Keycloak** through its Admin API
+- 3 roles: `EMPLOYEE`, `TECHNICIAN`, `ADMIN`, enforced with Spring Security
+- Admin tools: search, change role, deactivate, user statistics
+
+---
+
+## 🔄 CI/CD pipeline
+
+Every push runs a **6-stage GitLab pipeline**, for each of the 4 microservices:
+
+```mermaid
+flowchart LR
+    A[🔨 Build<br/>Maven · Java 21] --> B[🧪 Test<br/>JUnit 5 + SonarQube]
+    B --> C[🐳 Docker build<br/>image saved as artifact]
+    C --> D[🛡 Security scan<br/>Trivy CRITICAL/HIGH]
+    D --> E[📦 Push<br/>GitLab Container Registry]
+    E --> F{🚀 Deploy}
+    F -->|main| G[☁️ Azure VM<br/>Docker Compose over SSH]
+    F -->|k8s-local| H[☸️ Kubernetes<br/>services + monitoring]
 ```
 
-### **☁️ Production Environment (Azure)**
-- **Azure VM**: Ubuntu 20.04 with Docker Compose orchestration
-- **Terraform**: Automated infrastructure provisioning 
-- **Security**: Azure Network Security Groups, Key Vault integration
-- **Monitoring**: External monitoring and log aggregation
+- Images are built **once**, scanned by **Trivy**, and only then pushed to the registry.
+- Trivy reports are exported in **SARIF** format, ready for GitLab's security dashboard.
+- Each service is analysed as its own module in **SonarQube**.
+- Maven, Sonar and Trivy caches keep pipelines fast.
 
 ---
 
-## 🛡️ **Security & Quality Assurance**
+## ☸️ Kubernetes
 
-### **Security Implementation**
-- ✅ **Vulnerability Scanning** - Trivy integration in CI/CD pipeline
-- ✅ **Code Quality** - SonarQube with security hotspot detection  
-- ✅ **Container Security** - Distroless images, non-root users
-- ✅ **Authentication** - Keycloak SSO with OAuth2/OIDC protocols
-- ✅ **Network Security** - Service mesh communication encryption
+The whole platform runs on Kubernetes (tested on Minikube): **9 deployments**, including both databases, Keycloak, the 4 microservices, Prometheus and Grafana.
 
-### **Quality Gates**
-- **Test Coverage** - Minimum 80% code coverage requirement
-- **Security Scanning** - Zero critical vulnerabilities policy
-- **Code Quality** - SonarQube quality gates enforcement
-- **Performance** - Load testing and performance benchmarks
+The gateway, Keycloak, Eureka, Prometheus and Grafana are exposed through `NodePort` services:
+
+| Service | URL |
+|---|---|
+| API Gateway | `http://<node-ip>:30080` |
+| Keycloak admin | `http://<node-ip>:30180` |
+| Eureka dashboard | `http://<node-ip>:30761` |
+| Prometheus | `http://<node-ip>:30090` |
+| Grafana | `http://<node-ip>:30300` |
 
 ---
 
-## � **Quick Start Guide**
+## 🌍 Infrastructure as Code
 
-### **Prerequisites**
-- Java 21, Maven 3.9+, Docker, Kubernetes
-- GitLab account, Azure subscription (for production)
+`terraform/` provisions the **Azure** production environment from scratch:
 
-### **1. Local Development Setup**
+- resource group, virtual network and subnet;
+- network security group with only the required ports open;
+- static public IP;
+- Ubuntu VM (`Standard_B2s`) bootstrapped with Docker through cloud-init.
+
+The pipeline then deploys `docker-compose.prod.yml` to this VM over SSH.
+
 ```bash
-# Clone repository
-git clone https://gitlab.com/ouchajaaamine/helpdesk.git
-cd helpdesk
-
-# Start Kubernetes cluster
-minikube start
-
-# Deploy via GitLab CI/CD
-# Push to 'k8s-local' branch → Triggers automated deployment
-
-# Access applications
-kubectl get services
-```
-
-### **2. Production Deployment**
-```bash
-# Azure infrastructure provisioning
 cd terraform
-terraform init && terraform apply
-
-# Production deployment via CI/CD
-# Push to 'main' branch → Triggers Azure VM deployment
+terraform init
+terraform apply
 ```
 
 ---
 
-## 📈 **Monitoring & Observability**
+## 📈 Observability
 
-### **Metrics & Dashboards**
-- **Application Metrics** - JVM, HTTP requests, database connections
-- **Business Metrics** - User registrations, ticket processing rates  
-- **Infrastructure Metrics** - CPU, memory, disk, network utilization
-- **Custom Dashboards** - Real-time monitoring with Grafana
-
-### **Health Monitoring**
-- **Service Discovery** - Automatic service health detection
-- **Circuit Breakers** - Fault tolerance and resilience patterns
-- **Distributed Tracing** - Request flow across microservices
-- **Alerting** - Prometheus alerts with Grafana notifications
+All services expose **Spring Boot Actuator** metrics in Prometheus format. **Grafana** dashboards show JVM memory, CPU, garbage collection and HTTP traffic for each service.
 
 ---
 
-## 🏗️ **Project Structure**
+## 📸 Screenshots
+
+<table>
+<tr>
+<td width="50%"><b>☸️ Kubernetes: 9 deployments, all running</b><br/><img src="kubernetes%20final.png" alt="Kubernetes dashboard"/></td>
+<td width="50%"><b>✅ SonarQube: Quality Gate passed</b><br/><img src="sonarqube.png" alt="SonarQube analysis"/></td>
+</tr>
+<tr>
+<td width="50%"><b>📊 Grafana: JVM and system dashboard</b><br/><img src="Grafana.png" alt="Grafana dashboard"/></td>
+<td width="50%"><b>📈 Prometheus: service targets</b><br/><img src="prometheus.png" alt="Prometheus targets"/></td>
+</tr>
+<tr>
+<td colspan="2"><b>🧭 Eureka: registered microservices</b><br/><img src="eureka%20k8s.png" alt="Eureka registry"/></td>
+</tr>
+<tr>
+<td colspan="2"><b>🗺 End-to-end DevSecOps workflow</b><br/><img src="Untitled%20design.png" alt="DevSecOps architecture"/></td>
+</tr>
+</table>
+
+---
+
+## 🚀 Run it locally
+
+**Prerequisites:** Docker and Docker Compose.
+
+```bash
+git clone https://github.com/ouchajaaamine/helpdesk.git
+cd helpdesk
+docker compose up -d
+```
+
+| Component | URL |
+|---|---|
+| API Gateway | http://localhost:8080 |
+| Swagger UI, all services | http://localhost:8080/swagger-ui.html |
+| Keycloak | http://localhost:8180 |
+| Eureka | http://localhost:8761 |
+
+The Keycloak realm (roles, client and test users) is imported from `keycloak-import/`. You can also create it with `./setup-keycloak-realm.sh`.
+
+> The credentials in `docker-compose.yml` are local development defaults only. Never reuse them in a real environment.
+
+---
+
+## 📚 API overview
+
+| Area | Endpoints (sample) |
+|---|---|
+| **Tickets** | `POST /api/tickets` · `GET /api/tickets/{id}` · `PUT /api/tickets/{id}/status` · `PUT /api/tickets/{id}/assign/{technicianId}` · `GET /api/tickets/overdue` · `GET /api/tickets/search` · `GET /api/tickets/{id}/history` |
+| **Attachments** | `POST /api/tickets/{id}/attachments` · `GET …/attachments/{attachmentId}/download` |
+| **Users** | `POST /api/users/signup` · `PUT /api/users/{id}/profile` · `PUT /api/users/{id}/password` |
+| **Admin** | `GET /api/admin/pending-users` · `POST /api/admin/pending-users/{id}/approve` · `PUT /api/admin/users/{id}/role` · `GET /api/admin/stats` |
+
+The full interactive documentation is generated with **springdoc-openapi** and aggregated by the gateway.
+
+---
+
+## 🧰 Tech stack
+
+| Layer | Technologies |
+|---|---|
+| **Backend** | Java 21 (Java 17 for user-service), Spring Boot 3, Spring Cloud (Gateway, Eureka, LoadBalancer), Spring Data JPA, Spring Security |
+| **Security** | Keycloak (SSO, JWT, Admin API), OAuth2 resource server, role-based access |
+| **Data** | PostgreSQL 15, one database per service |
+| **Testing** | JUnit 5, Spring Boot Test, Testcontainers |
+| **Containers** | Docker, Docker Compose |
+| **Orchestration** | Kubernetes (Minikube) |
+| **Cloud & IaC** | Microsoft Azure, Terraform |
+| **CI/CD** | GitLab CI/CD, GitLab Container Registry |
+| **Quality & security** | SonarQube, Trivy |
+| **Observability** | Spring Boot Actuator, Micrometer, Prometheus, Grafana |
+
+---
+
+## 📂 Project structure
 
 ```
 helpdesk/
-├── 📁 backend/                    # Microservices source code
-│   ├── discovery-service/         # Eureka service registry
-│   ├── gateway-service/           # API Gateway with routing
-│   ├── user-service/             # User management & auth
-│   └── ticket-service/           # Business logic core
-├── 📁 kubernetes/                # K8s deployment manifests  
-│   ├── *-deployment.yaml        # Service deployments
-│   ├── prometheus-*.yaml        # Monitoring configuration
-│   └── grafana-*.yaml           # Dashboard setup
-├── 📁 terraform/                # Infrastructure as Code
-│   ├── main.tf                  # Azure resources
-│   ├── variables.tf             # Configuration variables
-│   └── outputs.tf               # Resource outputs
-├── 📁 keycloak-import/          # SSO configuration
-├── 📄 .gitlab-ci.yml            # Complete CI/CD pipeline
-├── 📄 docker-compose.yml        # Local development
-└── 📄 gitlab-pipeline.eraser    # Architecture diagram
+├── backend/
+│   ├── discovery-service/   # Eureka registry
+│   ├── gateway-service/     # Spring Cloud Gateway + aggregated Swagger
+│   ├── user-service/        # Users, approval workflow, Keycloak provisioning
+│   └── ticket-service/      # Tickets, SLA, audit trail, attachments
+├── kubernetes/              # Deployments, services, Prometheus & Grafana
+├── terraform/               # Azure infrastructure
+├── keycloak-import/         # Keycloak realm (roles, clients)
+├── docker-compose.yml       # Local environment
+├── docker-compose.prod.yml  # Production environment (Azure VM)
+└── .gitlab-ci.yml           # DevSecOps pipeline
 ```
 
 ---
 
-## 🎨 **Architecture Highlights**
+## 🛣 Roadmap
 
-### **Design Patterns Implemented**
-- **Microservices Architecture** - Domain-driven service boundaries
-- **API Gateway Pattern** - Centralized routing and cross-cutting concerns
-- **Service Discovery** - Dynamic service registration and health checks
-- **Circuit Breaker** - Fault tolerance and resilience implementation
-- **CQRS** - Command Query Responsibility Segregation in services
-
-### **DevOps Best Practices**
-- **Infrastructure as Code** - Terraform for reproducible deployments
-- **GitOps Workflow** - Git-based deployment automation
-- **Container Security** - Multi-stage builds, vulnerability scanning
-- **Observability** - Comprehensive monitoring and alerting
-- **Automated Testing** - Unit, integration, and security testing
+- [ ] Web front-end (React) for employees and technicians
+- [ ] Resilience4j circuit breakers between services
+- [ ] Higher test coverage, enforced as a SonarQube quality gate
+- [ ] Helm chart and deployment to a managed cluster (AKS)
 
 ---
 
-## 🏆 **Professional Achievements**
+<div align="center">
 
-### **Enterprise-Grade Implementation**
-✅ **Production-Ready** - Complete enterprise architecture with monitoring  
-✅ **Security-First** - Comprehensive security scanning and authentication  
-✅ **Cloud-Native** - Kubernetes orchestration with Azure cloud integration  
-✅ **DevSecOps** - Automated pipeline with security gates and quality checks  
-✅ **Scalable Design** - Microservices with load balancing and auto-scaling  
+### 👋 Author
 
-### **Technical Excellence**
-- **Zero-Downtime Deployments** - Blue-green deployment strategies
-- **Infrastructure Automation** - Complete Terraform Azure provisioning  
-- **Monitoring Excellence** - Prometheus + Grafana observability stack
-- **Security Integration** - Trivy + SonarQube + Keycloak authentication
-- **Quality Assurance** - Comprehensive testing with coverage reporting
+**Amine Ouchajaa**, Software Engineer (Java / Spring Boot · DevOps)
 
----
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-amine--ouchajaa-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/amine-ouchajaa)
+[![GitHub](https://img.shields.io/badge/GitHub-ouchajaaamine-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ouchajaaamine)
 
-## 🤝 **Professional Contact**
+⭐ If you find this project useful, a star is always appreciated!
 
-**LinkedIn**: [Your LinkedIn Profile]  
-**GitLab**: [https://gitlab.com/ouchajaaamine/helpdesk](https://gitlab.com/ouchajaaamine/helpdesk)  
-**Portfolio**: [Your Portfolio Website]
-
----
-
-## 📋 **Technologies Showcase**
-
-| Category | Technologies |
-|----------|-------------|
-| **Backend** | Spring Boot 3.x, Java 21, Maven, Spring Cloud |
-| **Security** | Keycloak, OAuth2/OIDC, Spring Security, RBAC |
-| **Databases** | PostgreSQL, Connection Pooling, Migration Scripts |
-| **Containers** | Docker, Multi-stage builds, Distroless images |
-| **Orchestration** | Kubernetes, Minikube, Azure AKS |
-| **Cloud** | Microsoft Azure, Virtual Machines, Networking |
-| **Infrastructure** | Terraform, Infrastructure as Code, State Management |
-| **CI/CD** | GitLab CI/CD, Pipeline automation, Security gates |
-| **Monitoring** | Prometheus, Grafana, Spring Actuator, Metrics |
-| **Security** | Trivy, SonarQube, Vulnerability scanning |
-| **Quality** | JUnit 5, Test coverage, Code quality gates |
-
----
-
-*This project demonstrates enterprise-level software engineering practices suitable for production environments and showcases modern DevSecOps implementation with complete infrastructure automation.*
+</div>
